@@ -1,0 +1,3180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- __WT_PASS_START__ --><script>window.__WT_PASS__="ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f";</script><!-- __WT_PASS_END__ -->
+<!-- __WT_USER_START__ --><script>window.__WT_USER__="6111cd2dd463c22a10a32262633e4fa005319e9a4c43076ea2aa6831100da4ea";</script><!-- __WT_USER_END__ -->
+<!-- __WT_CONT_USER_START__ --><script>window.__WT_CONT_USER__="ff06535ac1029cca2fc2b86ac7355a7b4e0b8d839fc76b51d30833f4e1347ddc";</script><!-- __WT_CONT_USER_END__ -->
+<!-- __WT_CONT_PASS_START__ --><script>window.__WT_CONT_PASS__="2ec51af9a670805ac614326577f3bf732ce379e6a90f1a0deeb15a152aa19393";</script><!-- __WT_CONT_PASS_END__ -->
+<!-- __WT_DATA_START__ --><script>window.__WT_DATA__=null;</script><!-- __WT_DATA_END__ -->
+<title>WealthTrack — Investment Portfolio</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#0d1117;--surface:#161b22;--surface2:#21262d;--surface3:#30363d;
+  --border:#30363d;--text:#e6edf3;--muted:#7d8590;
+  --green:#3fb950;--red:#f85149;--blue:#58a6ff;
+  --gold:#d29922;--purple:#bc8cff;--orange:#ffa657;
+  --accent-bg:#238636;--accent:#3fb950;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden;font-size:14px}
+
+/* ── Sidebar ── */
+#sidebar{width:224px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.s-logo{padding:16px 14px 12px;font-size:16px;font-weight:700;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;color:var(--text)}
+.s-logo span{color:var(--accent)}
+.s-sect{padding:10px 14px 3px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600}
+.s-link{display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;color:var(--muted);font-size:13px;transition:all .15s;border-left:3px solid transparent;user-select:none}
+.s-link:hover{color:var(--text);background:var(--surface2)}
+.s-link.active{color:var(--text);background:var(--surface2);border-left-color:var(--accent)}
+.s-icon{width:16px;text-align:center;flex-shrink:0}
+.s-val{margin-left:auto;font-size:11px;color:var(--muted)}
+.s-footer{margin-top:auto;border-top:1px solid var(--border);padding:10px}
+.btn-refresh{width:100%;padding:7px;background:var(--accent-bg);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:5px;transition:opacity .2s}
+.btn-refresh:hover{opacity:.85}
+.btn-refresh:disabled{opacity:.45;cursor:not-allowed}
+.refresh-status{font-size:10px;color:var(--muted);text-align:center;margin-top:5px;min-height:14px}
+
+/* ── Main ── */
+#main{flex:1;overflow-y:auto;padding:22px 26px}
+.page{display:none}
+.page.active{display:block}
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.pt{font-size:19px;font-weight:700;display:flex;align-items:center;gap:8px}
+
+/* ── Cards ── */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:12px;margin-bottom:20px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:13px 15px}
+.cl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.cv{font-size:19px;font-weight:700;line-height:1.2}
+.cs{font-size:11px;color:var(--muted);margin-top:2px}
+.cc{font-size:12px;margin-top:3px;font-weight:600}
+.pos{color:var(--green)}.neg{color:var(--red)}.neu{color:var(--muted)}
+
+/* ── Tables ── */
+.tb{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:18px}
+.tbh{display:flex;align-items:center;justify-content:space-between;padding:11px 15px;border-bottom:1px solid var(--border)}
+.tbt{font-size:13px;font-weight:600}
+.tbr{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:var(--surface2);padding:8px 12px;text-align:left;color:var(--muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface2)}
+.tr-total td{font-weight:700;background:var(--surface2)!important;border-top:2px solid var(--border)}
+
+/* ── Charts ── */
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+.cb{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px}
+.cbt{font-size:12px;font-weight:600;margin-bottom:10px;color:var(--muted)}
+.cbf{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:18px}
+
+/* ── Badges ── */
+.badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700}
+.b-blue{background:rgba(88,166,255,.15);color:var(--blue)}
+.b-green{background:rgba(63,185,80,.15);color:var(--green)}
+.b-red{background:rgba(248,81,73,.15);color:var(--red)}
+.b-gold{background:rgba(210,153,34,.2);color:var(--gold)}
+.b-purple{background:rgba(188,140,255,.15);color:var(--purple)}
+.b-orange{background:rgba(255,166,87,.15);color:var(--orange)}
+.b-gray{background:var(--surface2);color:var(--muted)}
+
+/* ── Buttons ── */
+button{font-family:inherit;cursor:pointer;border:none;border-radius:6px;font-size:12px;font-weight:600;transition:all .15s}
+.btn-p{background:var(--accent-bg);color:#fff;padding:6px 12px}
+.btn-p:hover{opacity:.85}
+.btn-s{background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:4px 9px;font-size:11px}
+.btn-s:hover{border-color:var(--muted)}
+.btn-d{background:transparent;color:var(--red);border:1px solid transparent;padding:4px 9px;font-size:11px}
+.btn-d:hover{border-color:var(--red)}
+.btn-snap{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 13px}
+.btn-snap:hover{border-color:var(--accent);color:var(--accent)}
+.btn-period{background:var(--surface2);border:1px solid var(--border);color:var(--muted);padding:3px 10px;font-size:11px;border-radius:5px}
+.btn-period:hover{border-color:var(--muted);color:var(--text)}
+.btn-period.active{background:rgba(63,185,80,.15);border-color:var(--accent);color:var(--accent)}
+.btn-lookup{background:rgba(88,166,255,.15);color:var(--blue);border:1px solid rgba(88,166,255,.3);padding:4px 9px;font-size:11px;margin-top:4px;width:100%}
+.btn-lookup:hover{background:rgba(88,166,255,.25)}
+.btn-lookup:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── Modal ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;width:600px;max-width:96vw;max-height:92vh;overflow-y:auto}
+.modal h3{font-size:14px;margin-bottom:16px}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:11px}
+.fg label{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.fg input,.fg select,.fg textarea{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none;width:100%}
+.fg input:focus,.fg select:focus{border-color:var(--blue)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ma{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.btn-cancel{background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:7px 15px}
+.hint{font-size:10px;color:var(--muted);line-height:1.4;margin-top:2px}
+
+/* ── Misc ── */
+.pna{color:var(--muted);font-style:italic;font-size:11px}
+.empty-st{padding:28px;text-align:center;color:var(--muted);font-size:12px}
+.spin{display:inline-block;width:11px;height:11px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.nt{font-size:10px;color:var(--muted);font-style:italic}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.price-tag{font-size:10px;color:var(--muted);padding:2px 6px;background:var(--surface2);border-radius:4px}
+.lookup-result{font-size:12px;margin-top:6px;padding:6px 9px;background:var(--surface2);border-radius:5px;display:none}
+@media(max-width:1080px){.chart-row,.two-col{grid-template-columns:1fr}#sidebar{width:195px}}
+
+/* ── Lock Screen ── */
+#lock-screen{position:fixed;inset:0;background:#0d1117;display:flex;align-items:center;justify-content:center;z-index:9999}
+.lock-box{background:#161b22;border:1px solid #30363d;border-radius:16px;padding:48px 52px;display:flex;flex-direction:column;align-items:center;gap:14px;min-width:320px;box-shadow:0 8px 40px rgba(0,0,0,0.6)}
+.lock-logo{font-size:26px;font-weight:700;color:#e6edf3;margin-bottom:4px;letter-spacing:-0.5px}
+.lock-logo span{color:#3fb950}
+.lock-subtitle{font-size:12px;color:#8b949e;margin-bottom:8px;letter-spacing:0.5px;text-transform:uppercase}
+.lock-field{width:100%;display:flex;flex-direction:column;gap:5px}
+.lock-field label{font-size:11px;color:#8b949e;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;padding-left:2px}
+#lock-user,#lock-input{width:100%;padding:10px 14px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-size:14px;outline:none;box-sizing:border-box}
+#lock-user:focus,#lock-input:focus{border-color:#58a6ff}
+#lock-input{letter-spacing:2px}
+#lock-btn{width:100%;padding:11px;background:#238636;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;margin-top:4px}
+#lock-btn:hover{background:#2ea043}
+#lock-error{color:#f85149;font-size:12px;min-height:16px}
+
+/* ── Contractor Mode ── */
+body.contractor-mode #sidebar{display:none}
+body.contractor-mode #main{margin-left:0}
+.cont-badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;letter-spacing:.3px}
+.cont-badge.open{background:rgba(255,166,0,.15);color:var(--orange)}
+.cont-badge.closed{background:rgba(63,185,80,.15);color:var(--green)}
+.cont-badge.current{background:rgba(88,166,255,.15);color:var(--blue)}
+.cont-month-row td{vertical-align:middle}
+.cont-month-row:hover td{background:var(--surface2)}
+.cont-current-row td{background:rgba(88,166,255,.06)}
+.cont-invoice-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:20px;align-items:center}
+.cont-invoice-box .cib-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.cont-invoice-box .cib-val{font-size:22px;font-weight:700}
+.cont-invoice-box .cib-sub{font-size:11px;color:var(--muted);margin-top:2px}
+/* ── Invoice cards ── */
+.inv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;padding:4px 0}
+.inv-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+.inv-card-photo{width:100%;height:140px;object-fit:cover;display:block;background:var(--bg);cursor:pointer}
+.inv-card-photo-placeholder{width:100%;height:140px;display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--muted);font-size:36px;cursor:pointer}
+.inv-card-body{padding:12px 14px;flex:1}
+.inv-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px}
+.inv-card-company{font-weight:700;font-size:14px;color:var(--text)}
+.inv-card-amount{font-size:16px;font-weight:700;color:var(--green);white-space:nowrap}
+.inv-card-meta{font-size:11px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.inv-type-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700}
+.inv-type-invoice{background:rgba(63,185,80,.15);color:var(--green)}
+.inv-type-expense{background:rgba(255,166,0,.15);color:var(--orange)}
+.inv-type-travel{background:rgba(88,166,255,.15);color:var(--blue)}
+.inv-type-purchase{background:rgba(188,140,255,.15);color:#bc8cff}
+.inv-type-other{background:var(--surface);color:var(--muted)}
+.inv-card-actions{display:flex;gap:6px;margin-top:auto}
+/* Photo lightbox */
+#inv-lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:10000;display:none;align-items:center;justify-content:center;cursor:pointer}
+#inv-lightbox img{max-width:95vw;max-height:95vh;border-radius:8px;object-fit:contain}
+/* Photo upload area */
+.photo-upload-area{border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;position:relative;margin-bottom:4px}
+.photo-upload-area:hover{border-color:var(--accent)}
+.photo-upload-area img{max-width:100%;max-height:200px;border-radius:6px;display:block;margin:0 auto}
+.photo-upload-area .pu-hint{color:var(--muted);font-size:12px;margin-top:8px}
+/* Mobile contractor portal */
+@media(max-width:680px){
+  body.contractor-mode #main{padding:10px}
+  .cont-invoice-box{gap:14px;padding:14px}
+  .cont-invoice-box .cib-val{font-size:18px}
+  #cont-month-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .inv-grid{grid-template-columns:1fr}
+  .cards{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div id="lock-screen" style="display:none">
+  <div class="lock-box">
+    <div class="lock-logo">💼 <span>Wealth</span>Track</div>
+    <div class="lock-subtitle">Sign in to continue</div>
+    <div class="lock-field">
+      <label>Username</label>
+      <input id="lock-user" type="text" placeholder="Enter username" autocomplete="username" spellcheck="false">
+    </div>
+    <div class="lock-field">
+      <label>Password</label>
+      <input id="lock-input" type="password" placeholder="Enter password" autocomplete="current-password">
+    </div>
+    <button id="lock-btn" onclick="unlock()">Sign In</button>
+    <div id="lock-error"></div>
+  </div>
+</div>
+
+<!-- ═══ SIDEBAR ═══════════════════════════════════ -->
+<div id="sidebar">
+  <div class="s-logo">💼 <span>WealthTrack</span></div>
+
+  <div class="s-sect">Overview</div>
+  <div class="s-link active" onclick="nav('dashboard')" data-page="dashboard"><span class="s-icon">📊</span>Dashboard<span class="s-val" id="sv-total">—</span></div>
+
+  <div class="s-sect">Crypto</div>
+  <div class="s-link" onclick="nav('kraken')"   data-page="kraken">  <span class="s-icon">🦅</span>Kraken   <span class="s-val" id="sv-kraken">—</span></div>
+  <div class="s-link" onclick="nav('exodus')"   data-page="exodus">  <span class="s-icon">🚀</span>Exodus   <span class="s-val" id="sv-exodus">—</span></div>
+  <div class="s-link" onclick="nav('whitebit')" data-page="whitebit"><span class="s-icon">⚪</span>WhiteBIT <span class="s-val" id="sv-whitebit">—</span></div>
+
+  <div class="s-sect">Stocks & ETFs</div>
+  <div class="s-link" onclick="nav('etoro')" data-page="etoro"><span class="s-icon">📈</span>eToro<span class="s-val" id="sv-etoro">—</span></div>
+  <div class="s-link" onclick="nav('ibrk')"  data-page="ibrk"> <span class="s-icon">🏦</span>IBRK <span class="s-val" id="sv-ibrk">—</span></div>
+
+  <div class="s-sect">Real Estate</div>
+  <div class="s-link" onclick="nav('realestate')" data-page="realestate"><span class="s-icon">🏠</span>Properties<span class="s-val" id="sv-re">—</span></div>
+
+  <div class="s-sect">Other Assets</div>
+  <div class="s-link" onclick="nav('revolut')"  data-page="revolut"> <span class="s-icon">💎</span>Revolut  <span class="s-val" id="sv-revolut">—</span></div>
+  <div class="s-link" onclick="nav('brubank')"  data-page="brubank"> <span class="s-icon">🇦🇷</span>Brubank  <span class="s-val" id="sv-brubank">—</span></div>
+  <div class="s-link" onclick="nav('cash')"     data-page="cash">    <span class="s-icon">💵</span>Cash &amp; Banks<span class="s-val" id="sv-cash">—</span></div>
+  <div class="s-link" onclick="nav('docta')"   data-page="docta">  <span class="s-icon">🏢</span>Revolut Docta<span class="s-val" id="sv-docta">—</span></div>
+  <div class="s-sect">Company</div>
+  <div class="s-link" onclick="nav('biz')" data-page="biz"><span class="s-icon">📊</span>Docta Business</div>
+
+  <div class="s-sect">Config</div>
+  <div class="s-link" onclick="nav('settings')" data-page="settings"><span class="s-icon">⚙️</span>Settings</div>
+
+  <div class="s-footer">
+    <button class="btn-refresh" id="btn-refresh" onclick="doRefresh()">⟳ Refresh Prices</button>
+    <div class="refresh-status" id="refresh-status">Click to fetch live prices</div>
+  </div>
+</div>
+
+<!-- ═══ MAIN ══════════════════════════════════════ -->
+<div id="main">
+
+<!-- DASHBOARD ──────────────────────────────── -->
+<div id="page-dashboard" class="page active">
+  <div class="ph">
+    <div class="pt">📊 Portfolio Dashboard</div>
+    <button class="btn-snap" onclick="takeSnapshot()">📸 Save Monthly Snapshot</button>
+  </div>
+  <div class="cards" id="d-cards"></div>
+  <div class="chart-row">
+    <div class="cb"><div class="cbt">Allocation by Account</div><canvas id="ch-alloc" height="210"></canvas></div>
+    <div class="cb"><div class="cbt">Allocation by Asset Type</div><canvas id="ch-type" height="210"></canvas></div>
+  </div>
+  <div class="cbf">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="cbt" style="margin-bottom:0">📈 Wealth Over Time (EUR)</div>
+      <div style="display:flex;gap:6px">
+        <span style="font-size:10px;color:var(--muted);align-self:center">Filter:</span>
+        <button class="btn-period active" data-p="all" onclick="setChartPeriod('all',this)">All</button>
+        <button class="btn-period" data-p="1y"  onclick="setChartPeriod('1y',this)">1Y</button>
+        <button class="btn-period" data-p="6m"  onclick="setChartPeriod('6m',this)">6M</button>
+        <button class="btn-period" data-p="3m"  onclick="setChartPeriod('3m',this)">3M</button>
+        <button class="btn-period" data-p="1m"  onclick="setChartPeriod('1m',this)">1M</button>
+      </div>
+    </div>
+    <canvas id="ch-growth" height="130"></canvas>
+    <div style="margin-top:8px;font-size:10px;color:var(--muted);display:flex;gap:16px">
+      <span>🟢 Total Wealth</span>
+      <span>🔵 Capital Deposited (cost basis)</span>
+      <span>🟠 True Organic Growth (market gains only, excl. new deposits)</span>
+    </div>
+  </div>
+  <div class="tb">
+    <div class="tbh"><span class="tbt">Account Breakdown</span></div>
+    <div class="tbr"><table><thead><tr><th>Account</th><th>Type</th><th>Cost Basis (EUR)</th><th>Current (EUR)</th><th>Current (USD)</th><th>P&amp;L (EUR)</th><th>P&amp;L %</th></tr></thead><tbody id="d-breakdown"></tbody></table></div>
+  </div>
+</div>
+
+<!-- KRAKEN ─────────────────────────────────── -->
+<div id="page-kraken" class="page">
+  <div class="ph"><div class="pt">🦅 Kraken</div><button class="btn-p" onclick="openModal('kraken')">+ Add Asset</button></div>
+  <div class="cards" id="c-kraken"></div>
+  <div class="tb"><div class="tbh"><span class="tbt">Holdings</span><span class="pna" id="u-kraken"></span></div>
+  <div class="tbr"><table><thead><tr><th>Asset</th><th>Symbol</th><th>Units</th><th>Invested (EUR)</th><th>Avg Buy (EUR)</th><th>Price (EUR)</th><th>Value (EUR)</th><th>P&amp;L (EUR)</th><th>P&amp;L %</th><th></th></tr></thead><tbody id="t-kraken"></tbody></table></div></div>
+</div>
+
+<!-- EXODUS ─────────────────────────────────── -->
+<div id="page-exodus" class="page">
+  <div class="ph"><div class="pt">🚀 Exodus</div><button class="btn-p" onclick="openModal('exodus')">+ Add Asset</button></div>
+  <div class="cards" id="c-exodus"></div>
+  <div class="tb"><div class="tbh"><span class="tbt">Holdings</span></div>
+  <div class="tbr"><table><thead><tr><th>Asset</th><th>Symbol</th><th>Units</th><th>Invested (EUR)</th><th>Avg Buy (EUR)</th><th>Price (EUR)</th><th>Value (EUR)</th><th>P&amp;L (EUR)</th><th>P&amp;L %</th><th></th></tr></thead><tbody id="t-exodus"></tbody></table></div></div>
+</div>
+
+<!-- WHITEBIT ─────────────────────────────────── -->
+<div id="page-whitebit" class="page">
+  <div class="ph">
+    <div class="pt">⚪ WhiteBIT</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-s" onclick="openModal('whitebit')">+ Spot Crypto</button>
+      <button class="btn-p" onclick="openModal('wb_fixed')">+ Fixed Term</button>
+    </div>
+  </div>
+  <div class="cards" id="c-whitebit"></div>
+  <div class="tb">
+    <div class="tbh"><span class="tbt">🔒 Fixed-Term Deposits (USDT)</span></div>
+    <div class="tbr"><table><thead><tr>
+      <th>Name</th><th>Principal (USDT)</th><th>APR</th><th>Term</th><th>Days Left</th><th>Interest Accrued</th><th>Value (EUR)</th><th>Note</th><th></th>
+    </tr></thead><tbody id="t-wb-fixed"></tbody></table></div>
+  </div>
+  <div class="tb">
+    <div class="tbh"><span class="tbt">Spot Crypto Holdings</span></div>
+    <div class="tbr"><table><thead><tr><th>Asset</th><th>Symbol</th><th>Units</th><th>Invested (EUR)</th><th>Avg Buy (EUR)</th><th>Price (EUR)</th><th>Value (EUR)</th><th>P&amp;L (EUR)</th><th>P&amp;L %</th><th></th></tr></thead><tbody id="t-whitebit"></tbody></table></div>
+  </div>
+</div>
+
+<!-- ETORO ──────────────────────────────────── -->
+<div id="page-etoro" class="page">
+  <div class="ph"><div class="pt">📈 eToro</div><button class="btn-p" onclick="openModal('etoro')">+ Add Position</button></div>
+  <div class="cards" id="c-etoro"></div>
+  <div class="tb"><div class="tbh"><span class="tbt">Positions</span><span class="pna" id="u-etoro"></span></div>
+  <div class="tbr"><table><thead><tr><th>Asset</th><th>Symbol</th><th>Units</th><th>Invested (USD)</th><th>Entry Price</th><th>Opened</th><th>Price Today</th><th>Value (USD)</th><th>Value (EUR)</th><th>P&amp;L (USD)</th><th>P&amp;L %</th><th></th></tr></thead><tbody id="t-etoro"></tbody></table></div></div>
+</div>
+
+<!-- IBRK ───────────────────────────────────── -->
+<div id="page-ibrk" class="page">
+  <div class="ph"><div class="pt">🏦 Interactive Brokers</div><button class="btn-p" onclick="openModal('ibrk')">+ Add Position</button></div>
+  <div class="cards" id="c-ibrk"></div>
+  <div class="tb"><div class="tbh"><span class="tbt">Positions</span></div>
+  <div class="tbr"><table><thead><tr><th>Asset</th><th>Symbol</th><th>Units</th><th>Invested (USD)</th><th>Entry Price</th><th>Opened</th><th>Price Today</th><th>Value (USD)</th><th>Value (EUR)</th><th>P&amp;L (USD)</th><th>P&amp;L %</th><th></th></tr></thead><tbody id="t-ibrk"></tbody></table></div></div>
+</div>
+
+<!-- REAL ESTATE ────────────────────────────── -->
+<div id="page-realestate" class="page">
+  <div class="ph"><div class="pt">🏠 Real Estate</div><button class="btn-p" onclick="openModal('realestate')">+ Add Property</button></div>
+  <div class="cards" id="c-re"></div>
+  <div class="tb">
+    <div class="tbh"><span class="tbt">Properties</span></div>
+    <div class="tbr"><table><thead><tr>
+      <th>Property</th><th>Type</th><th>Date</th>
+      <th>Your Capital</th><th>Property Value</th><th>Your Equity</th>
+      <th>Monthly Breakdown (your share)</th>
+      <th>Net CF / mo</th><th>Cash-on-Cash ROI</th>
+      <th>Note</th><th></th>
+    </tr></thead><tbody id="t-re"></tbody></table></div>
+  </div>
+</div>
+
+<!-- REVOLUT ────────────────────────────────── -->
+<div id="page-revolut" class="page">
+  <div class="ph"><div class="pt">💎 Revolut</div>
+    <div style="display:flex;gap:8px"><button class="btn-p" onclick="openModal('revolut_gold')">+ Gold Purchase</button><button class="btn-s" onclick="openModal('revolut_cash')">+ Cash</button></div>
+  </div>
+  <div class="cards" id="c-revolut"></div>
+  <div class="tb"><div class="tbh"><span class="tbt">Gold Vault (XAU)</span><span class="pna" id="u-gold"></span></div>
+  <div class="tbr"><table><thead><tr><th>Oz</th><th>Paid (EUR/oz)</th><th>Paid (USD/oz)</th><th>Invested (EUR)</th><th>Date</th><th>Current Value (EUR)</th><th>P&amp;L (EUR)</th><th>P&amp;L %</th><th></th></tr></thead><tbody id="t-rgold"></tbody></table></div></div>
+  <div class="tb"><div class="tbh"><span class="tbt">Cash Holdings</span></div>
+  <div class="tbr"><table><thead><tr><th>Currency</th><th>Amount</th><th>Value (EUR)</th><th></th></tr></thead><tbody id="t-rcash"></tbody></table></div></div>
+</div>
+
+<!-- BRUBANK ────────────────────────────────── -->
+<div id="page-brubank" class="page">
+  <div class="ph"><div class="pt">🇦🇷 Brubank</div><button class="btn-p" onclick="openModal('brubank')">+ Add Position</button></div>
+  <div class="cards" id="c-brubank"></div>
+  <div class="tb"><div class="tbh"><span class="tbt">Positions</span><span class="pna">USD/ARS set in Settings</span></div>
+  <div class="tbr"><table><thead><tr><th>Name</th><th>Type</th><th>Detail</th><th>Cost (EUR)</th><th>Value (EUR)</th><th>P&amp;L</th><th>Date</th><th></th></tr></thead><tbody id="t-brubank"></tbody></table></div></div>
+</div>
+
+<!-- CASH ───────────────────────────────────── -->
+<div id="page-cash" class="page">
+  <div class="ph"><div class="pt">💵 Cash &amp; Banks</div><button class="btn-p" onclick="openModal('cash')">+ Add Entry</button></div>
+  <div class="cards" id="c-cash"></div>
+  <div class="tb"><div class="tbh"><span class="tbt">Accounts &amp; Cash Holdings</span></div>
+  <div class="tbr"><table><thead><tr><th>Description</th><th>Bank / Location</th><th>Currency</th><th>Amount</th><th>Value (EUR)</th><th></th></tr></thead><tbody id="t-cash"></tbody></table></div></div>
+</div>
+
+<!-- DOCTA BUSINESS ─────────────────────────── -->
+<div id="page-docta" class="page">
+  <div class="ph"><div class="pt">🏢 Revolut Docta</div><button class="btn-p" onclick="openModal('docta')">+ Add Entry</button></div>
+  <div class="cards" id="c-docta"></div>
+  <div class="tb"><div class="tbh"><span class="tbt">Business Assets &amp; Stakes</span></div>
+  <div class="tbr"><table><thead><tr><th>Name</th><th>Type</th><th>Invested (EUR)</th><th>Current Value (EUR)</th><th>P&amp;L (EUR)</th><th>P&amp;L %</th><th>Date</th><th>Note</th><th></th></tr></thead><tbody id="t-docta"></tbody></table></div></div>
+</div>
+
+<!-- DOCTA BUSINESS ─────────────────────────── -->
+<div id="page-biz" class="page">
+  <!-- month nav bar -->
+  <div class="ph">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="pt">📊 Docta Business</div>
+      <div style="display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px">
+        <button onclick="bizPrevMonth()" style="background:none;border:none;color:var(--text);cursor:pointer;font-size:16px;padding:0 4px">‹</button>
+        <span id="biz-month-label" style="font-size:13px;font-weight:600;min-width:90px;text-align:center">—</span>
+        <button onclick="bizNextMonth()" style="background:none;border:none;color:var(--text);cursor:pointer;font-size:16px;padding:0 4px">›</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-s" style="color:var(--blue);border-color:rgba(88,166,255,.4)" onclick="previewContractor()">👁 Contractor View</button>
+      <button class="btn-s" onclick="openBizModal('settings')">⚙️ Settings</button>
+      <button class="btn-s" onclick="openBizModal('fixedcost')">+ Fixed Cost</button>
+      <button class="btn-p" onclick="openBizModal('variablecost')">+ Variable Cost</button>
+    </div>
+  </div>
+  <!-- summary cards -->
+  <div class="cards" id="biz-cards"></div>
+  <!-- main content -->
+  <div class="two-col" style="gap:16px;margin-bottom:16px">
+    <!-- Contractor -->
+    <div class="tb" style="padding:18px">
+      <div class="tbh" style="margin-bottom:14px">
+        <span class="tbt">👷 Contractor</span>
+        <button class="btn-s" style="padding:4px 10px;font-size:11px" onclick="openBizModal('contractor')">Edit Month</button>
+      </div>
+      <div id="biz-contractor"></div>
+    </div>
+    <!-- P&L Summary -->
+    <div class="tb" style="padding:18px">
+      <div class="tbt" style="margin-bottom:14px">📈 Monthly P&amp;L</div>
+      <div id="biz-pnl"></div>
+    </div>
+  </div>
+  <div class="two-col" style="gap:16px">
+    <!-- Fixed Costs -->
+    <div class="tb">
+      <div class="tbh"><span class="tbt">🔒 Fixed Costs</span></div>
+      <div class="tbr"><table><thead><tr><th>Name</th><th>Category</th><th>EUR/mo</th><th>Active</th><th></th></tr></thead><tbody id="biz-fixed"></tbody></table></div>
+    </div>
+    <!-- Variable Costs -->
+    <div class="tb">
+      <div class="tbh"><span class="tbt">📦 Variable Costs</span><span id="biz-var-period" style="font-size:11px;color:var(--muted)"></span></div>
+      <div class="tbr"><table><thead><tr><th>Name</th><th>Category</th><th>EUR</th><th>Date</th><th>Note</th><th></th></tr></thead><tbody id="biz-variable"></tbody></table></div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTRACTOR PORTAL ──────────────────────────── -->
+<div id="page-contractor" class="page">
+  <div class="ph">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="pt">👷 <span id="cont-page-name">Contractor</span>'s Portal</div>
+      <span id="cont-preview-badge" style="display:none;font-size:10px;background:rgba(88,166,255,.15);color:var(--blue);border:1px solid rgba(88,166,255,.3);border-radius:10px;padding:2px 9px;font-weight:700;letter-spacing:.4px">ADMIN PREVIEW</span>
+    </div>
+    <button id="cont-exit-btn" class="btn-s" style="padding:6px 14px" onclick="contractorLogout()">🔒 Sign Out</button>
+  </div>
+  <!-- current month highlight box -->
+  <div id="cont-current-box" class="cont-invoice-box"></div>
+  <!-- summary cards -->
+  <div class="cards" id="cont-cards"></div>
+  <!-- monthly table -->
+  <div class="tb" style="margin-top:0">
+    <div class="tbh">
+      <span class="tbt">📅 All Months</span>
+      <span class="hint" style="font-size:11px">Click ✏️ to edit any month</span>
+    </div>
+    <div id="cont-month-table-wrap">
+      <table class="t">
+        <thead><tr>
+          <th>Month</th>
+          <th>Forecast Days</th>
+          <th>Actual Days</th>
+          <th>Prev Adj</th>
+          <th>Card Expenses</th>
+          <th>Invoice</th>
+          <th>Status</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="cont-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- invoices section -->
+  <div class="tb" style="margin-top:16px">
+    <div class="tbh">
+      <span class="tbt">🧾 Expenses</span>
+      <button class="btn-p" style="padding:7px 14px;font-size:13px" onclick="openInvoiceModal()">+ Add Expense</button>
+    </div>
+    <div id="inv-summary-cards" class="cards" style="margin:12px 0 4px"></div>
+    <div id="inv-grid" class="inv-grid" style="padding:0 16px 16px"></div>
+  </div>
+</div>
+
+<!-- INVOICE LIGHTBOX -->
+<div id="inv-lightbox" onclick="this.style.display='none'"><img id="inv-lightbox-img" src=""></div>
+
+<!-- INVOICE MODAL -->
+<div class="overlay" id="inv-modal-ov">
+  <div class="modal" style="max-width:480px">
+    <h3 id="inv-m-title">🧾 Add Expense</h3>
+    <div id="inv-m-body">
+      <!-- photo area -->
+      <div class="photo-upload-area" onclick="document.getElementById('inv-photo-input').click()" id="inv-photo-area">
+        <div id="inv-photo-preview" style="display:none"><img id="inv-photo-img" src="" style="max-width:100%;max-height:200px;border-radius:6px"></div>
+        <div id="inv-photo-empty">
+          <div style="font-size:40px;margin-bottom:8px">📷</div>
+          <div style="font-weight:600;color:var(--text)">Tap to add photo</div>
+          <div class="pu-hint">Take a photo or choose from your gallery</div>
+        </div>
+      </div>
+      <input type="file" id="inv-photo-input" accept="image/*" capture="environment" style="display:none" onchange="handleInvoicePhoto(event)">
+      <!-- form fields -->
+      <div class="frow" style="margin-top:14px">
+        <div class="fg"><label>Date</label><input type="date" id="inv-date"></div>
+        <div class="fg"><label>Type</label>
+          <select id="inv-type">
+            <option value="invoice">📄 Invoice</option>
+            <option value="expense">🧾 Expense</option>
+            <option value="travel">✈️ Travel</option>
+            <option value="purchase">🛒 Purchase</option>
+            <option value="other">📋 Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><label>Company / Issuer</label><input id="inv-company" placeholder="e.g. Client name or supplier"></div>
+      <div class="frow">
+        <div class="fg"><label>Amount</label><input type="number" step="0.01" min="0" id="inv-amount" placeholder="0.00"></div>
+        <div class="fg"><label>Currency</label>
+          <select id="inv-currency">
+            <option value="EUR">EUR €</option>
+            <option value="USD">USD $</option>
+            <option value="GBP">GBP £</option>
+            <option value="CHF">CHF</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><label>Description / Note</label><input id="inv-note" placeholder="Optional note"></div>
+    </div>
+    <div class="ma">
+      <button class="btn-cancel" onclick="closeInvoiceModal()">Cancel</button>
+      <button class="btn-p" style="padding:7px 18px" onclick="saveInvoiceModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONTRACTOR EDIT MODAL -->
+<div class="overlay" id="cont-modal-ov">
+  <div class="modal">
+    <h3 id="cont-m-title">Edit Month</h3>
+    <div id="cont-m-body"></div>
+    <div class="ma">
+      <button class="btn-cancel" onclick="closeContModal()">Cancel</button>
+      <button class="btn-p" style="padding:7px 18px" onclick="saveContModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- BIZ MODAL -->
+<div class="overlay" id="biz-modal-ov">
+  <div class="modal">
+    <h3 id="biz-m-title">—</h3>
+    <div id="biz-m-body"></div>
+    <div class="ma">
+      <button class="btn-cancel" onclick="closeBizModal()">Cancel</button>
+      <button class="btn-p" style="padding:7px 18px" onclick="saveBizModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS ───────────────────────────────── -->
+<div id="page-settings" class="page">
+  <div class="ph"><div class="pt">⚙️ Settings</div></div>
+  <div class="two-col">
+    <div class="tb" style="padding:18px">
+      <div class="tbt" style="margin-bottom:13px">Exchange Rates <span class="hint" style="display:inline;text-transform:none;letter-spacing:0">(auto-updated on refresh)</span></div>
+      <div class="frow">
+        <div class="fg"><label>EUR/USD (USD per 1 EUR)</label><input id="s-eurusd" type="number" step="0.0001"></div>
+        <div class="fg"><label>USD/ARS (ARS per USD)</label><input id="s-usdars" type="number" step="1"></div>
+        <div class="fg"><label>EUR/CZK (CZK per EUR)</label><input id="s-eurczk" type="number" step="0.01"></div>
+        <div class="fg"><label>EUR/GBP (GBP per EUR)</label><input id="s-eurgbp" type="number" step="0.001"></div>
+        <div class="fg"><label>EUR/CHF (CHF per EUR)</label><input id="s-eurchf" type="number" step="0.001"></div>
+        <div class="fg"><label>EUR/PLN (PLN per EUR)</label><input id="s-eurpln" type="number" step="0.01"></div>
+      </div>
+      <button class="btn-p" style="margin-top:12px" onclick="saveSettings()">Save Rates</button>
+    </div>
+    <div class="tb" style="padding:18px">
+      <div class="tbt" style="margin-bottom:4px">💾 Backup &amp; Restore</div>
+      <p class="hint" style="margin-bottom:14px">Export a full backup of all your data. Import to restore after a data loss.</p>
+      <div id="backup-summary" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--muted);line-height:1.8"></div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn-p" style="padding:10px;font-size:13px" onclick="exportData()">📤 Export Backup</button>
+        <button class="btn-s" style="padding:10px;font-size:13px" onclick="document.getElementById('imp').click()">📥 Restore from Backup</button>
+        <input type="file" id="imp" accept=".json" style="display:none" onchange="importData(event)">
+        <div id="import-msg" style="font-size:12px;min-height:16px"></div>
+        <button class="btn-d" style="padding:8px;margin-top:4px;font-size:11px" onclick="resetAll()">🗑️ Reset All Data</button>
+      </div>
+    </div>
+  </div>
+  <div class="tb" style="padding:18px;margin-top:16px">
+    <div class="tbt" style="margin-bottom:13px">🔒 Password Protection</div>
+    <p class="hint" style="margin-bottom:12px">Set a password to protect access. The password is saved to the file via the server.</p>
+    <div class="frow">
+      <div class="fg"><label>New Password</label><input id="s-newpass" type="password" placeholder="Enter new password"></div>
+      <div class="fg"><label>Confirm Password</label><input id="s-confpass" type="password" placeholder="Confirm password"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn-p" onclick="setPassword()">🔒 Set Password</button>
+      <button class="btn-d" style="padding:8px" onclick="removePassword()">🔓 Remove Password</button>
+    </div>
+    <div id="pass-msg" style="font-size:12px;margin-top:8px;min-height:16px"></div>
+  </div>
+  <div class="tb" style="padding:18px;margin-top:16px">
+    <div class="tbt" style="margin-bottom:6px">👷 Contractor Access</div>
+    <p class="hint" style="margin-bottom:14px">Set the login credentials for your contractor. They will only see their own invoices, days, and expenses — not your portfolio.</p>
+    <div class="frow">
+      <div class="fg"><label>Contractor Username</label><input id="s-contuser" type="text" placeholder="e.g. gabriel" autocomplete="off"></div>
+      <div class="fg"><label>Contractor Password</label><input id="s-contpass" type="password" placeholder="Set a password"></div>
+    </div>
+    <button class="btn-p" style="margin-top:10px" onclick="setContractorCreds()">💾 Save Contractor Credentials</button>
+    <div id="cont-cred-msg" style="font-size:12px;margin-top:8px;min-height:16px"></div>
+  </div>
+  <div class="tb" style="padding:18px">
+    <div class="tbt" style="margin-bottom:10px">Monthly Snapshots</div>
+    <div id="snap-list"></div>
+  </div>
+  <div class="tb" style="padding:18px;margin-top:14px">
+    <div class="tbt" style="margin-bottom:8px">🔍 Price Fetch Debug Log</div>
+    <p class="hint" style="margin-bottom:10px">Shows the result of the last "Refresh Prices" attempt. If all sources fail, try the Network Test below.</p>
+    <button class="btn-s" style="padding:6px 14px;margin-bottom:10px" onclick="runNetworkTest()">🌐 Run Network Test</button>
+    <div id="debug-log-out" style="font-family:monospace;font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;max-height:280px;overflow-y:auto;white-space:pre-wrap;color:var(--muted)">Click "Refresh Prices" to populate this log.</div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- SNAPSHOT MODAL ─────────────────────────── -->
+<div class="overlay" id="snap-ov">
+  <div class="modal" style="max-width:460px">
+    <h3>📸 Save Monthly Snapshot</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Recording your portfolio at <strong id="snap-date-lbl"></strong></p>
+    <div class="fg">
+      <label>New capital deposited since last snapshot (EUR)
+        <span class="hint" style="text-transform:none;letter-spacing:0">Fresh money you moved into investments this period. Leave 0 if none.</span>
+      </label>
+      <input id="snap-deposits" type="number" step="any" value="0" min="0" placeholder="e.g. 1000" oninput="updateSnapPreview()">
+    </div>
+    <div style="background:var(--surface2);border-radius:6px;padding:10px 12px;font-size:12px;margin-bottom:14px">
+      <div style="color:var(--muted);margin-bottom:6px;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Snapshot preview</div>
+      <div style="display:flex;justify-content:space-between"><span>Total Wealth</span><strong id="sp-wealth">—</strong></div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px"><span>New deposits entered</span><strong id="sp-dep">€0</strong></div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;padding-top:6px;border-top:1px solid var(--border)"><span>True Organic Growth this period</span><strong id="sp-org" class="pos">—</strong></div>
+    </div>
+    <div class="ma">
+      <button class="btn-cancel" onclick="document.getElementById('snap-ov').classList.remove('open')">Cancel</button>
+      <button class="btn-p" style="padding:7px 18px" onclick="confirmSnapshot()">Save Snapshot</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ──────────────────────────────────── -->
+<div class="overlay" id="modal-ov">
+  <div class="modal">
+    <h3 id="m-title">Add</h3>
+    <div id="m-body"></div>
+    <div class="ma">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-p" style="padding:7px 18px" onclick="saveModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// DEFAULT STATE
+// ═══════════════════════════════════════════════════════════
+const DEFAULTS = {
+  rates:{ eurUsd:1.085, usdArs:1540, eurCzk:25.1, eurGbp:0.856, eurChf:0.940, eurPln:4.27 },
+  prices:{}, snapshots:[], lastRefresh:null,
+  accounts:{
+    kraken:[
+      {id:'k1',name:'USDC',     symbol:'USDC', cgId:'usd-coin',  units:1000.3584,    invested:872.97},
+      {id:'k2',name:'Bitcoin',  symbol:'BTC',  cgId:'bitcoin',   units:0.19124,      invested:9157.75},
+      {id:'k3',name:'Ethereum', symbol:'ETH',  cgId:'ethereum',  units:3.20037,      invested:6803.98},
+      {id:'k4',name:'Dogecoin', symbol:'DOGE', cgId:'dogecoin',  units:10265.47,     invested:1708.11},
+      {id:'k5',name:'Cardano',  symbol:'ADA',  cgId:'cardano',   units:319.267639,   invested:473.20},
+      {id:'k6',name:'Polkadot', symbol:'DOT',  cgId:'polkadot',  units:1.09651039,   invested:30.93}
+    ],
+    exodus:[
+      {id:'e1',name:'Bitcoin', symbol:'BTC', cgId:'bitcoin', units:0.017}
+    ],
+    whitebit:[],
+    wb_fixed:[
+      {id:'wbf1',name:'USDT Fixed Term (1Y)',principalUSDT:1000,   annualRatePct:20.26,startDate:'2026-03-16',termDays:365,note:'20.26% APR'},
+      {id:'wbf2',name:'USDT Fixed Term (6M)',principalUSDT:555.95, annualRatePct:16.12,startDate:'2026-03-19',termDays:182,note:'16.12% APR'}
+    ],
+    etoro:[
+      {id:'et1', name:'Cash Dollars',       symbol:'CASH',   type:'cash',  units:1,      invested:7616.00,  entry:7616.00, opened:'2026-03-20',note:''},
+      {id:'et2', name:'SPY (S&P 500 ETF)',  symbol:'SPY',    type:'stock', units:1.455,  invested:999.97,   entry:687.13,  opened:'2026-02-27',note:''},
+      {id:'et3', name:'MSFT (Microsoft)',   symbol:'MSFT',   type:'stock', units:2.358,  invested:1000.00,  entry:424.12,  opened:'2026-02-02',note:''},
+      {id:'et4', name:'TSLA (Tesla)',       symbol:'TSLA',   type:'stock', units:2,      invested:867.30,   entry:433.65,  opened:'2026-01-28',note:''},
+      {id:'et5', name:'SPY (S&P 500 ETF)',  symbol:'SPY',    type:'stock', units:1.435,  invested:999.99,   entry:696.62,  opened:'2026-01-27',note:''},
+      {id:'et6', name:'SPY (S&P 500 ETF)',  symbol:'SPY',    type:'stock', units:1.47,   invested:999.99,   entry:680.24,  opened:'2026-01-21',note:''},
+      {id:'et7', name:'SPY (S&P 500 ETF)',  symbol:'SPY',    type:'stock', units:3.026,  invested:1999.98,  entry:660.88,  opened:'2025-10-13',note:''},
+      {id:'et8', name:'TTWO (Take-Two)',    symbol:'TTWO',   type:'stock', units:3.944,  invested:1000.00,  entry:253.54,  opened:'2025-09-22',note:''},
+      {id:'et9', name:'SPY (S&P 500 ETF)',  symbol:'SPY',    type:'stock', units:1,      invested:601.56,   entry:601.56,  opened:'2025-06-16',note:''},
+      {id:'et10',name:'BA (Boeing)',        symbol:'BA',     type:'stock', units:1,      invested:201.09,   entry:201.09,  opened:'2025-06-13',note:''},
+      {id:'et11',name:'TSLA (Tesla)',       symbol:'TSLA',   type:'stock', units:2,      invested:595.18,   entry:297.59,  opened:'2025-06-06',note:''},
+      {id:'et12',name:'SPY (S&P 500 ETF)',  symbol:'SPY',    type:'stock', units:1.99,   invested:999.99,   entry:502.39,  opened:'2025-04-08',note:''},
+      {id:'et13',name:'SPY (S&P 500 ETF)',  symbol:'SPY',    type:'stock', units:1.834,  invested:999.98,   entry:545.12,  opened:'2024-09-09',note:''},
+      {id:'et14',name:'IWM (Russell 2000)', symbol:'IWM',    type:'stock', units:4.796,  invested:999.99,   entry:208.51,  opened:'2024-09-09',note:''},
+      {id:'et15',name:'SPY (S&P 500 ETF)',  symbol:'SPY',    type:'stock', units:1.184,  invested:646.00,   entry:545.56,  opened:'2024-06-26',note:''},
+      {id:'et16',name:'SPY (S&P 500 ETF)',  symbol:'SPY',    type:'stock', units:1.953,  invested:1000.00,  entry:511.98,  opened:'2024-04-12',note:''},
+      {id:'et17',name:'SPY (S&P 500 ETF)',  symbol:'SPY',    type:'stock', units:1.912,  invested:999.98,   entry:522.91,  opened:'2024-04-01',note:''},
+      {id:'et18',name:'SPY (S&P 500 ETF)',  symbol:'SPY',    type:'stock', units:1.957,  invested:1000.00,  entry:510.93,  opened:'2024-03-05',note:''},
+      {id:'et19',name:'SPY (S&P 500 ETF)',  symbol:'SPY',    type:'stock', units:20.597, invested:10000.00, entry:485.51,  opened:'2024-01-22',note:''},
+      {id:'et20',name:'SPY (S&P 500 ETF)',  symbol:'SPY',    type:'stock', units:24.129, invested:10000.00, entry:414.42,  opened:'2023-10-26',note:''},
+      {id:'et21',name:'SPY (S&P 500 ETF)',  symbol:'SPY',    type:'stock', units:2.222,  invested:1000.00,  entry:449.95,  opened:'2023-09-14',note:''},
+      {id:'et22',name:'NVTKL (Norilsk)',    symbol:'NVTK.L', type:'stock', units:0.066,  invested:13.86,    entry:209.30,  opened:'2022-01-21',note:'Frozen/Delisted'},
+      {id:'et23',name:'NVTKL (Norilsk)',    symbol:'NVTK.L', type:'stock', units:0.142,  invested:31.78,    entry:223.50,  opened:'2021-06-10',note:'Frozen/Delisted'},
+      {id:'et24',name:'NVTKL (Norilsk)',    symbol:'NVTK.L', type:'stock', units:0.132,  invested:29.53,    entry:223.50,  opened:'2021-06-10',note:'Frozen/Delisted'}
+    ],
+    ibrk:[],
+    realestate:[
+      {id:'re1',name:'Rio Bamba', type:'land',   country:'Argentina',
+       purchasePrice:45000, purchaseCurrency:'USD', currentValue:45000, currentCurrency:'USD',
+       purchaseDate:'', monthlyRent:0,rentCurrency:'USD',monthlyMortgage:0,mortgageCurrency:'USD',occupancy:100,note:'Long-term land appreciation'},
+      {id:'re2',name:'Pje Reyna', type:'land',   country:'Argentina',
+       purchasePrice:75000, purchaseCurrency:'USD', currentValue:75000, currentCurrency:'USD',
+       purchaseDate:'', monthlyRent:0,rentCurrency:'USD',monthlyMortgage:0,mortgageCurrency:'USD',occupancy:100,note:'Long-term land appreciation'}
+    ],
+    revolut_gold:[
+      {id:'rg1',units:1,priceEUR:2885.50,priceUSD:null,   totalEUR:2885.50,date:'2025-07-03'},
+      {id:'rg2',units:2,priceEUR:3776.70,priceUSD:null,   totalEUR:7553.40,date:'2026-01-02'},
+      {id:'rg3',units:1,priceEUR:3893.47,priceUSD:4519.00,totalEUR:3893.47,date:'2026-03-23'}
+    ],
+    revolut_cash:[],
+    brubank:[
+      {id:'bb3',name:'Brubank Stock YPF',type:'stock_ars', qty:18,costARS:972000, curARS:1092150,valueUSD:782,   valueEUR:673.28, date:'2026-03-06',note:''},
+      {id:'bb4',name:'Brubank Stock YPF',type:'stock_ars', qty:18,costARS:954000, curARS:1092150,valueUSD:782,   valueEUR:673.28, date:'2026-03-07',note:''},
+      {id:'bb5',name:'Brubank Pesos',    type:'cash_ars',  qty:1, costARS:600000, curARS:600000, valueUSD:429.61,valueEUR:369.88, date:'',           note:'Cash in ARS'},
+      {id:'bb6',name:'Brubank Dólares',  type:'cash_usd',  qty:1, costARS:0,      curARS:0,      valueUSD:120,   valueEUR:103.32, date:'',           note:'Cash in USD'}
+    ],
+    cash:[],
+    docta:[]
+  },
+  biz:{
+    contractor:{name:'Brother',costRateEUR:66.52,sellRateEUR:69.50,hoursPerDay:8},
+    invoices:[],
+    fixedCosts:[
+      {id:'fc1',name:'Accounting',      category:'admin',   amountEUR:150,  active:true},
+      {id:'fc2',name:'Apps & Software', category:'software',amountEUR:50,   active:true},
+      {id:'fc3',name:'Hosting & Infra', category:'infra',   amountEUR:30,   active:true},
+      {id:'fc4',name:'Website',         category:'infra',   amountEUR:20,   active:true}
+    ],
+    months:{}
+  }
+};
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let S={}, MC={account:null,editId:null}, CH={};
+let currentRole='owner'; // 'owner' | 'contractor'
+let _contPreview=false;
+const ALL_ACCS=['kraken','exodus','whitebit','wb_fixed','etoro','ibrk','realestate','revolut_gold','revolut_cash','brubank','cash','docta'];
+const CURRENCIES=['EUR','USD','ARS','CZK','GBP','CHF','PLN','HUF','SEK','NOK','DKK','BRL','CLP','MXN','CAD','JPY','AUD'];
+
+function clone(o){return JSON.parse(JSON.stringify(o))}
+function loadState(){
+  try{
+    // Prefer data embedded in the file (works across all browsers)
+    if(window.__WT_DATA__ && typeof window.__WT_DATA__==='object' && Object.keys(window.__WT_DATA__).length>0){
+      S=window.__WT_DATA__;fixKeys();return;
+    }
+    // Fall back to localStorage
+    const s=localStorage.getItem('wt_v3');if(s){S=JSON.parse(s);fixKeys();}else S=clone(DEFAULTS);
+  }catch(e){S=clone(DEFAULTS);}
+}
+function fixKeys(){
+  if(!S.rates)S.rates=clone(DEFAULTS.rates);
+  ['eurUsd','usdArs','eurCzk','eurGbp','eurChf','eurPln'].forEach(k=>{if(S.rates[k]==null)S.rates[k]=DEFAULTS.rates[k];});
+  if(!S.prices)S.prices={};
+  if(!S.snapshots)S.snapshots=[];
+  if(!S.accounts)S.accounts={};
+  ALL_ACCS.forEach(k=>{if(!S.accounts[k])S.accounts[k]=[];});
+  if(!S.biz)S.biz=clone(DEFAULTS.biz);
+  if(!S.biz.contractor)S.biz.contractor=clone(DEFAULTS.biz.contractor);
+  if(!S.biz.fixedCosts)S.biz.fixedCosts=clone(DEFAULTS.biz.fixedCosts);
+  if(!S.biz.months)S.biz.months={};
+  if(!S.biz.invoices)S.biz.invoices=[];
+  // ── Migrate WhiteBIT: seed fixed-term deposits if account is new/empty
+  if(!(S.accounts.wb_fixed||[]).length){
+    S.accounts.wb_fixed=[
+      {id:'wbf1',name:'USDT Fixed Term (1Y)',principalUSDT:1000,   annualRatePct:20.26,startDate:'2026-03-16',termDays:365,note:'20.26% APR'},
+      {id:'wbf2',name:'USDT Fixed Term (6M)',principalUSDT:555.95, annualRatePct:16.12,startDate:'2026-03-19',termDays:182,note:'16.12% APR'}
+    ];
+  }
+  // ── Migrate Kraken: apply real cost basis + precise units from Kraken screenshot
+  // Runs only for entries that don't yet have the invested field set
+  const krakenSeed={
+    'usd-coin': {units:1000.3584,  invested:872.97},
+    'bitcoin':  {units:0.19124,    invested:9157.75},
+    'ethereum': {units:3.20037,    invested:6803.98},
+    'dogecoin': {units:10265.47,   invested:1708.11},
+    'cardano':  {units:319.267639, invested:473.20},
+    'polkadot': {units:1.09651039, invested:30.93},
+  };
+  (S.accounts.kraken||[]).forEach(p=>{
+    if(p.invested==null && krakenSeed[p.cgId]){
+      p.units=krakenSeed[p.cgId].units;
+      p.invested=krakenSeed[p.cgId].invested;
+    }
+  });
+}
+function save(){
+  localStorage.setItem('wt_v3',JSON.stringify(S));
+  // Persist to file via server so all browsers always have the latest data
+  fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:S})})
+    .catch(()=>{});// silent if server not running
+}
+
+// ═══════════════════════════════════════════════════════════
+// CURRENCY
+// ═══════════════════════════════════════════════════════════
+const toEUR=usd=>usd/S.rates.eurUsd;
+const toUSD=eur=>eur*S.rates.eurUsd;
+function anyToEUR(amount,cur){
+  if(!amount)return 0;
+  switch(cur){
+    case'EUR':return amount;
+    case'USD':return toEUR(amount);
+    case'ARS':return toEUR(amount/S.rates.usdArs);
+    case'CZK':return amount/S.rates.eurCzk;
+    case'GBP':return amount/S.rates.eurGbp;
+    case'CHF':return amount/S.rates.eurChf;
+    case'PLN':return amount/S.rates.eurPln;
+    default:return amount; // treat as EUR
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// PRICE HELPERS
+// ═══════════════════════════════════════════════════════════
+function gp(key,cur='usd'){const p=S.prices[key];if(!p)return null;return cur==='eur'?p.eur:p.usd;}
+function ageStr(ts){if(!ts)return '';const m=Math.floor((Date.now()-ts)/60000);return m<2?'just now':m<60?`${m}m ago`:Math.floor(m/60)+'h ago';}
+
+// ═══════════════════════════════════════════════════════════
+// FORMAT
+// ═══════════════════════════════════════════════════════════
+function fm(v,cur='EUR',dec=2){
+  if(v==null||isNaN(v))return'—';
+  return new Intl.NumberFormat('en-US',{style:'currency',currency:cur,minimumFractionDigits:dec,maximumFractionDigits:dec}).format(v);
+}
+function fn(v,d=4){if(v==null||isNaN(v))return'—';return(+v).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:d});}
+function fp(v){if(v==null||isNaN(v))return'—';return(v>=0?'+':'')+v.toFixed(2)+'%';}
+function pc(v){return v==null?'':v>=0?'pos':'neg';}
+function gid(){return'_'+Math.random().toString(36).slice(2,8);}
+
+// ═══════════════════════════════════════════════════════════
+// VALUE CALCULATIONS
+// ═══════════════════════════════════════════════════════════
+function cryptoVal(acc){
+  let usd=0,eur=0,invEUR=0;
+  (S.accounts[acc]||[]).forEach(p=>{
+    const pu=gp(p.cgId,'usd'),pe=gp(p.cgId,'eur');
+    if(pu!=null)usd+=pu*p.units;
+    if(pe!=null)eur+=pe*p.units;
+    invEUR+=p.invested||0;
+  });
+  if(eur===0&&usd>0)eur=toEUR(usd);
+  return{usd,eur,invEUR};
+}
+function stockVal(acc){
+  let valUSD=0,invUSD=0;
+  (S.accounts[acc]||[]).forEach(p=>{
+    invUSD+=p.invested||0;
+    if(p.type==='cash')valUSD+=p.invested||0;
+    else{const pu=gp(p.symbol,'usd');valUSD+=pu!=null?pu*p.units:(p.invested||0);}
+  });
+  return{usd:valUSD,eur:toEUR(valUSD),invUSD,invEUR:toEUR(invUSD)};
+}
+function goldVal(){
+  const gp_=gp('XAU','eur')||gp('GC=F','usd')/S.rates.eurUsd||null;
+  let invEUR=0,units=0,valEUR=0;
+  (S.accounts.revolut_gold||[]).forEach(p=>{invEUR+=p.totalEUR;units+=p.units;});
+  valEUR=gp_!=null?gp_*units:invEUR;
+  return{valEUR,invEUR,units,priceEUR:gp_};
+}
+function revolutVal(){
+  const g=goldVal();let cashEUR=0;
+  (S.accounts.revolut_cash||[]).forEach(c=>cashEUR+=anyToEUR(c.amount,c.currency));
+  return{eur:g.valEUR+cashEUR,invEUR:g.invEUR+cashEUR,goldEUR:g.valEUR,cashEUR};
+}
+// Helper: compute rental metrics for a single property (respects ownershipPct)
+function rentalMetrics(p){
+  const own=(p.ownershipPct||100)/100;
+  const capital=anyToEUR(p.purchasePrice||0,p.purchaseCurrency||'EUR'); // already user's share
+  const propValEUR=anyToEUR(p.currentValue||0,p.currentCurrency||'EUR')*own;
+  const rentEUR=anyToEUR(p.monthlyRent||0,p.rentCurrency||'EUR')*own;
+  const mortEUR=anyToEUR(p.monthlyMortgage||0,p.mortgageCurrency||'EUR')*own;
+  const opExEUR=anyToEUR(p.monthlyOpEx||0,p.opExCurrency||'EUR')*own;
+  const maintEUR=anyToEUR(p.annualMaintenance||0,p.maintCurrency||'EUR')*own/12;
+  const netMonthly=rentEUR-mortEUR-opExEUR-maintEUR;
+  const annualNet=netMonthly*12;
+  const roi=capital>0?(annualNet/capital)*100:null;
+  return{capital,propValEUR,rentEUR,mortEUR,opExEUR,maintEUR,netMonthly,annualNet,roi,own};
+}
+
+// ── Mortgage equity calculator ──────────────────────────────────────────────
+// Returns how much of the property you truly own after accounting for
+// the outstanding mortgage balance.
+function calcMortgageEquity(p){
+  if(!p.mortgagePrincipal||!p.mortgageRatePct||!p.mortgageTermMonths||!p.mortgageStartDate) return null;
+  const principal=p.mortgagePrincipal;
+  const r=((p.mortgageRatePct||0)/100)/12; // monthly rate
+  const n=Math.round(p.mortgageTermMonths);
+  // Months elapsed since start date
+  const start=new Date(p.mortgageStartDate);
+  const now=new Date();
+  const k=Math.min(Math.max(0, (now.getFullYear()-start.getFullYear())*12+(now.getMonth()-start.getMonth())), n);
+  // Monthly payment (fixed-rate amortisation)
+  const pmt=r<0.000001 ? principal/n : principal*(r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1);
+  // Outstanding balance after k payments
+  const outstanding=r<0.000001
+    ? Math.max(0, principal*(1-k/n))
+    : Math.max(0, principal*(Math.pow(1+r,n)-Math.pow(1+r,k))/(Math.pow(1+r,n)-1));
+  // This month's split
+  const interestNow=outstanding*r;
+  const principalNow=Math.max(0,pmt-interestNow);
+  // Equity in EUR
+  const own=(p.ownershipPct||100)/100;
+  const propValEUR=anyToEUR(p.currentValue||0,p.currentCurrency||'EUR');
+  const outstandingEUR=anyToEUR(outstanding,p.mortgageCurrency||'EUR');
+  const equityEUR=(propValEUR-outstandingEUR)*own;
+  const equityPct=propValEUR>0?(1-(outstandingEUR/propValEUR))*100:0;
+  const monthlyGainEUR=anyToEUR(principalNow,p.mortgageCurrency||'EUR')*own;
+  return{outstanding,outstandingEUR,equityEUR,equityPct,monthlyGainEUR,
+    pmt,interestNow,principalNow,elapsed:k,remaining:Math.max(0,n-k)};
+}
+
+function realEstateVal(){
+  let curEUR=0,buyEUR=0,netCF=0;
+  (S.accounts.realestate||[]).forEach(p=>{
+    const own=(p.ownershipPct||100)/100;
+    const propValEUR=anyToEUR(p.currentValue||0,p.currentCurrency||'EUR')*own;
+    // Use equity (property value minus outstanding mortgage) if mortgage data exists
+    const eq=calcMortgageEquity(p);
+    curEUR+=eq ? eq.equityEUR : propValEUR;
+    buyEUR+=anyToEUR(p.purchasePrice||0,p.purchaseCurrency||'EUR');
+    if(p.type==='rental'){const m=rentalMetrics(p);netCF+=m.netMonthly;}
+  });
+  return{eur:curEUR,usd:toUSD(curEUR),buyEUR,pnlEUR:curEUR-buyEUR,netCF};
+}
+// Compute current EUR value + cost EUR for any Brubank item
+function brubankItemVals(p){
+  const usdArs=S.rates.usdArs||1540, eurUsd=S.rates.eurUsd||1.085;
+  const arsToEur=a=>a/usdArs/eurUsd;
+  if(p.type==='stock_ars_live'){
+    const curPrice=S.prices[p.symbol]?.ars||0;
+    const curARS=(p.qty||0)*curPrice;
+    const costARS=p.totalCostARS||((p.qty||0)*(p.costPriceARS||0));
+    const pnlARS=curARS-costARS;
+    const pnlPct=costARS>0?(pnlARS/costARS)*100:null;
+    return{eur:arsToEur(curARS),costEUR:arsToEur(costARS),
+      curARS,costARS,pnlARS,pnlPct,
+      curPrice,hasCurPrice:curPrice>0};
+  }
+  if(p.type==='plazo_fijo'){
+    const now=Date.now();
+    const start=p.startDate?new Date(p.startDate).getTime():now;
+    const termMs=(p.termDays||30)*86400000;
+    const maturity=start+termMs;
+    const elapsed=Math.min((now-start)/86400000, p.termDays||30);
+    const interest=(p.principalARS||0)*(p.annualRatePct||0)/100*(elapsed/365);
+    const valueARS=(p.principalARS||0)+interest;
+    const totalInterestARS=(p.principalARS||0)*(p.annualRatePct||0)/100*((p.termDays||30)/365);
+    const isMatured=now>=maturity;
+    const daysLeft=isMatured?0:Math.ceil((maturity-now)/86400000);
+    return{eur:arsToEur(valueARS),costEUR:arsToEur(p.principalARS||0),
+      valueARS,principalARS:p.principalARS||0,interestARS:interest,
+      totalInterestARS,isMatured,daysLeft,elapsed:Math.floor(elapsed)};
+  }
+  if(p.type==='cash_ars') return{eur:arsToEur(p.curARS||0),costEUR:arsToEur(p.curARS||0),curARS:p.curARS||0};
+  if(p.type==='cash_usd'){const e=toEUR(p.valueUSD||0);return{eur:e,costEUR:e};}
+  // legacy stock_ars
+  const e=p.valueEUR||0,c=arsToEur((p.costARS||0));
+  return{eur:e,costEUR:c,curARS:p.curARS||0,costARS:p.costARS||0,pnlARS:(p.curARS||0)-(p.costARS||0)};
+}
+function brubankVal(){
+  let eur=0,buyEUR=0;
+  (S.accounts.brubank||[]).forEach(p=>{const v=brubankItemVals(p);eur+=v.eur;buyEUR+=v.costEUR;});
+  return{eur,usd:toUSD(eur),buyEUR};
+}
+function wbitVal(){
+  const eurUsd=S.rates.eurUsd||1.085;
+  const usdToEur=u=>u/eurUsd;
+  let eur=0,invEUR=0;
+  // Spot crypto
+  (S.accounts.whitebit||[]).forEach(p=>{
+    const pe=gp(p.cgId,'eur')||(gp(p.cgId,'usd')!=null?toEUR(gp(p.cgId,'usd')):null);
+    if(pe)eur+=pe*p.units;
+    invEUR+=p.invested||0;
+  });
+  // Fixed-term USDT deposits (daily accrual)
+  const now=Date.now();
+  (S.accounts.wb_fixed||[]).forEach(p=>{
+    const start=new Date(p.startDate||Date.now()).getTime();
+    const elapsed=Math.min((now-start)/86400000,p.termDays||365);
+    const interest=(p.principalUSDT||0)*(p.annualRatePct||0)/100*(elapsed/365);
+    eur+=usdToEur((p.principalUSDT||0)+interest);
+    invEUR+=usdToEur(p.principalUSDT||0);
+  });
+  return{eur,usd:toUSD(eur),invEUR};
+}
+function cashVal(){
+  let eur=0;
+  (S.accounts.cash||[]).forEach(c=>eur+=anyToEUR(c.amount,c.currency));
+  return{eur,usd:toUSD(eur)};
+}
+function doctaVal(){
+  let eur=0,invEUR=0;
+  (S.accounts.docta||[]).forEach(p=>{
+    const inv=anyToEUR(p.invested||0,p.investedCurrency||'EUR');
+    const val=p.currentValue!=null?anyToEUR(p.currentValue,p.currentCurrency||'EUR'):inv;
+    invEUR+=inv;eur+=val;
+  });
+  return{eur,usd:toUSD(eur),invEUR};
+}
+function totalWealth(){
+  const k=cryptoVal('kraken'),ex=cryptoVal('exodus'),wb=wbitVal();
+  const et=stockVal('etoro'),ib=stockVal('ibrk');
+  const rv=revolutVal(),re=realEstateVal(),bb=brubankVal(),ca=cashVal(),dt=doctaVal();
+  const eur=k.eur+ex.eur+wb.eur+et.eur+ib.eur+rv.eur+re.eur+bb.eur+ca.eur+dt.eur;
+  const invEUR=k.invEUR+ex.invEUR+wb.invEUR+et.invEUR+ib.invEUR+rv.invEUR+re.buyEUR+bb.buyEUR+ca.eur+dt.invEUR;
+  return{eur,usd:toUSD(eur),invEUR,parts:{k,ex,wb,et,ib,rv,re,bb,ca,dt}};
+}
+
+// ═══════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════
+function nav(page){
+  document.querySelectorAll('.s-link').forEach(el=>el.classList.remove('active'));
+  document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  renderPage(page);
+}
+function updateSidebar(){
+  const w=totalWealth();
+  document.getElementById('sv-total').textContent=fm(w.eur,'EUR',0);
+  document.getElementById('sv-kraken').textContent=fm(w.parts.k.eur,'EUR',0);
+  document.getElementById('sv-exodus').textContent=fm(w.parts.ex.eur,'EUR',0);
+  document.getElementById('sv-whitebit').textContent=fm(w.parts.wb.eur,'EUR',0);
+  document.getElementById('sv-etoro').textContent=fm(w.parts.et.eur,'EUR',0);
+  document.getElementById('sv-ibrk').textContent=fm(w.parts.ib.eur,'EUR',0);
+  document.getElementById('sv-re').textContent=fm(w.parts.re.eur,'EUR',0);
+  document.getElementById('sv-revolut').textContent=fm(w.parts.rv.eur,'EUR',0);
+  document.getElementById('sv-brubank').textContent=fm(w.parts.bb.eur,'EUR',0);
+  document.getElementById('sv-cash').textContent=fm(w.parts.ca.eur,'EUR',0);
+  document.getElementById('sv-docta').textContent=fm(w.parts.dt.eur,'EUR',0);
+}
+function renderPage(p){
+  ({dashboard:renderDash,kraken:()=>renderCrypto('kraken'),exodus:()=>renderCrypto('exodus'),
+    whitebit:renderWhitebit,etoro:()=>renderStocks('etoro'),ibrk:()=>renderStocks('ibrk'),
+    realestate:renderRealEstate,revolut:renderRevolut,brubank:renderBrubank,cash:renderCash,docta:renderDocta,settings:renderSettings,biz:renderBiz,contractor:renderContractor
+  }[p]||(() => {}))();
+  updateSidebar();
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER DASHBOARD
+// ═══════════════════════════════════════════════════════════
+function renderDash(){
+  const w=totalWealth();
+  const re=realEstateVal();
+  const lastSnap=S.snapshots[S.snapshots.length-1];
+  const delta=lastSnap?w.eur-lastSnap.totalEUR:null;
+  const og=w.eur-w.invEUR;
+  const ogPct=w.invEUR>0?(og/w.invEUR)*100:0;
+
+  document.getElementById('d-cards').innerHTML=`
+    <div class="card"><div class="cl">Total Wealth</div><div class="cv">${fm(w.eur)}</div><div class="cs">${fm(w.usd,'USD')} USD</div></div>
+    <div class="card"><div class="cl">Total Invested</div><div class="cv">${fm(w.invEUR)}</div><div class="cs">Cost basis</div></div>
+    <div class="card"><div class="cl">Organic Growth</div><div class="cv ${pc(og)}">${fm(og)}</div><div class="cc ${pc(og)}">${fp(ogPct)}</div></div>
+    <div class="card"><div class="cl">vs Last Snapshot</div><div class="cv ${pc(delta)}">${delta!=null?fm(delta):'—'}</div><div class="cs">${lastSnap?'Since '+lastSnap.date:'No snapshots yet'}</div></div>
+    <div class="card"><div class="cl">RE Monthly Cash Flow</div><div class="cv ${pc(re.cfEUR)}">${re.cfEUR!==0?fm(re.cfEUR):'—'}</div><div class="cs">Rent − Mortgage</div></div>
+    <div class="card"><div class="cl">Crypto Total</div><div class="cv">${fm(w.parts.k.eur+w.parts.ex.eur+w.parts.wb.eur)}</div><div class="cs">${fp((w.parts.k.eur+w.parts.ex.eur+w.parts.wb.eur)/w.eur*100)} of portfolio</div></div>`;
+
+  // Breakdown table
+  const rows=[
+    {n:'🦅 Kraken',     t:'Crypto',       eur:w.parts.k.eur,  inv:0},
+    {n:'🚀 Exodus',     t:'Crypto',       eur:w.parts.ex.eur, inv:0},
+    {n:'⚪ WhiteBIT',   t:'Crypto',       eur:w.parts.wb.eur, inv:0},
+    {n:'📈 eToro',      t:'Stocks/ETFs',  eur:w.parts.et.eur, inv:w.parts.et.invEUR},
+    {n:'🏦 IBRK',       t:'Stocks/ETFs',  eur:w.parts.ib.eur, inv:w.parts.ib.invEUR},
+    {n:'🏠 Real Estate',t:'Real Estate',  eur:w.parts.re.eur, inv:re.buyEUR},
+    {n:'💎 Revolut',    t:'Gold/Cash',    eur:w.parts.rv.eur, inv:w.parts.rv.invEUR},
+    {n:'🇦🇷 Brubank',   t:'ARS Assets',   eur:w.parts.bb.eur, inv:w.parts.bb.buyEUR},
+    {n:'💵 Cash&Banks', t:'Cash',         eur:w.parts.ca.eur, inv:w.parts.ca.eur},
+    {n:'🏢 DOCTA',      t:'Business',     eur:w.parts.dt.eur, inv:w.parts.dt.invEUR}
+  ];
+  document.getElementById('d-breakdown').innerHTML=rows.map(r=>{
+    const pnl=r.eur-r.inv,pct=r.inv>0?(pnl/r.inv)*100:null;
+    return`<tr><td><strong>${r.n}</strong></td><td><span class="badge b-gray">${r.t}</span></td>
+      <td>${r.inv>0?fm(r.inv):'—'}</td><td><strong>${fm(r.eur)}</strong></td><td>${fm(toUSD(r.eur),'USD')}</td>
+      <td class="${pc(pnl)}">${r.inv>0?fm(pnl):'—'}</td><td class="${pc(pct)}">${r.inv>0?fp(pct):'—'}</td></tr>`;
+  }).join('')+`<tr class="tr-total"><td colspan="2"><strong>TOTAL</strong></td>
+    <td><strong>${fm(w.invEUR)}</strong></td><td><strong>${fm(w.eur)}</strong></td><td><strong>${fm(w.usd,'USD')}</strong></td>
+    <td class="${pc(og)}"><strong>${fm(og)}</strong></td><td class="${pc(ogPct)}"><strong>${fp(ogPct)}</strong></td></tr>`;
+
+  renderAllocCharts(w);
+  renderGrowthChart();
+}
+
+function renderAllocCharts(w){
+  const cryptoEUR=w.parts.k.eur+w.parts.ex.eur+w.parts.wb.eur;
+  const stocksEUR=w.parts.et.eur+w.parts.ib.eur;
+  const re=realEstateVal();
+  const goldEUR=goldVal().valEUR;
+  const cashEUR=w.parts.ca.eur+(w.parts.rv.cashEUR||0)+
+    (S.accounts.brubank||[]).filter(p=>p.type==='cash_ars'||p.type==='cash_usd').reduce((s,p)=>s+(p.valueEUR||0),0);
+  const arsStocksEUR=(S.accounts.brubank||[]).filter(p=>p.type==='stock_ars').reduce((s,p)=>s+(p.valueEUR||0),0);
+
+  mkDonut('ch-alloc',[
+    {l:'Kraken',    v:w.parts.k.eur,  c:'#f78166'},
+    {l:'Exodus',    v:w.parts.ex.eur, c:'#ffa657'},
+    {l:'WhiteBIT',  v:w.parts.wb.eur, c:'#e3b341'},
+    {l:'eToro',     v:w.parts.et.eur, c:'#3fb950'},
+    {l:'IBRK',      v:w.parts.ib.eur, c:'#58a6ff'},
+    {l:'Real Estate',v:w.parts.re.eur,c:'#bc8cff'},
+    {l:'Revolut',   v:w.parts.rv.eur, c:'#d29922'},
+    {l:'Brubank',   v:w.parts.bb.eur, c:'#7ee787'},
+    {l:'Cash',      v:w.parts.ca.eur, c:'#7d8590'},
+    {l:'DOCTA',     v:w.parts.dt.eur, c:'#f0a3ff'}
+  ].filter(d=>d.v>0));
+
+  mkDonut('ch-type',[
+    {l:'Crypto',      v:cryptoEUR,     c:'#f78166'},
+    {l:'Stocks/ETFs', v:stocksEUR,     c:'#3fb950'},
+    {l:'Real Estate', v:re.eur,        c:'#bc8cff'},
+    {l:'Gold',        v:goldEUR,       c:'#d29922'},
+    {l:'Stocks (ARS)',v:arsStocksEUR,  c:'#58a6ff'},
+    {l:'Cash',        v:cashEUR,       c:'#7d8590'},
+    {l:'Business',    v:w.parts.dt.eur,c:'#f0a3ff'}
+  ].filter(d=>d.v>0));
+}
+
+function mkDonut(id,data){
+  if(CH[id])CH[id].destroy();
+  CH[id]=new Chart(document.getElementById(id).getContext('2d'),{
+    type:'doughnut',
+    data:{labels:data.map(d=>d.l),datasets:[{data:data.map(d=>d.v),backgroundColor:data.map(d=>d.c),borderWidth:1,borderColor:'#161b22'}]},
+    options:{plugins:{
+      legend:{position:'right',labels:{color:'#e6edf3',font:{size:10},boxWidth:10,padding:8}},
+      tooltip:{callbacks:{label:c=>` ${fm(c.parsed)} (${((c.parsed/c.dataset.data.reduce((a,b)=>a+b,0))*100).toFixed(1)}%)`}}
+    }}
+  });
+}
+
+function renderGrowthChart(){
+  if(CH.growth)CH.growth.destroy();
+  const ctx=document.getElementById('ch-growth').getContext('2d');
+  if(!S.snapshots.length){
+    ctx.clearRect(0,0,9999,9999);ctx.fillStyle='#7d8590';ctx.font='13px sans-serif';
+    ctx.fillText('No snapshots yet — click "Save Monthly Snapshot" to start tracking.',16,60);return;
+  }
+  // Filter by selected period
+  let snaps=S.snapshots.slice();
+  if(chartPeriod!=='all'){
+    const mo={'1y':12,'6m':6,'3m':3,'1m':1}[chartPeriod]||999;
+    const cut=new Date();cut.setMonth(cut.getMonth()-mo);
+    const cutStr=cut.toISOString().slice(0,7);
+    const idx=snaps.findIndex(s=>s.date>=cutStr);
+    if(idx>0)snaps=snaps.slice(idx-1);      // one point before for context
+    else if(idx<0)snaps=snaps.slice(-1);   // only the last point if all are before range
+  }
+  // True Organic Growth: cumulative (market gains only, deposits excluded)
+  const hasNewDep=snaps.some(s=>s.newDeposits!==undefined);
+  let togData=null;
+  if(hasNewDep){
+    let cumTOG=0;
+    togData=snaps.map((s,i)=>{
+      if(i===0)return 0;
+      const prev=snaps[i-1];
+      cumTOG+=s.totalEUR-prev.totalEUR-(s.newDeposits||0);
+      return cumTOG;
+    });
+  }
+  const datasets=[
+    {label:'Total Wealth (EUR)', data:snaps.map(s=>s.totalEUR),  borderColor:'#3fb950',backgroundColor:'rgba(63,185,80,.1)', fill:true, tension:.35,pointRadius:4},
+    {label:'Deposited (EUR)',    data:snaps.map(s=>s.invEUR||0), borderColor:'#58a6ff',backgroundColor:'rgba(88,166,255,.07)',fill:true, tension:.35,borderDash:[5,4],pointRadius:3}
+  ];
+  if(togData){
+    datasets.push({label:'True Organic Growth (cumul.)',data:togData,borderColor:'#ffa657',backgroundColor:'rgba(255,166,87,.1)',fill:false,tension:.35,pointRadius:4,borderWidth:2});
+  }
+  CH.growth=new Chart(ctx,{type:'line',
+    data:{labels:snaps.map(s=>s.date),datasets},
+    options:{
+      plugins:{legend:{labels:{color:'#e6edf3',font:{size:11}}},tooltip:{callbacks:{label:c=>` ${fm(c.parsed.y)}`}}},
+      scales:{x:{ticks:{color:'#7d8590'},grid:{color:'#21262d'}},y:{ticks:{color:'#7d8590',callback:v=>fm(v,'EUR',0)},grid:{color:'#21262d'}}}
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER CRYPTO
+// ═══════════════════════════════════════════════════════════
+function renderCrypto(acc){
+  const rows=S.accounts[acc]||[];
+  let totEUR=0,totInv=0;
+  const html=rows.map(p=>{
+    const pe=gp(p.cgId,'eur')||(gp(p.cgId,'usd')!=null?toEUR(gp(p.cgId,'usd')):null);
+    const ve=pe!=null?pe*p.units:null;
+    const inv=p.invested||0;
+    const avgBuy=p.units>0&&inv>0?inv/p.units:null;
+    const pnl=ve!=null&&inv>0?ve-inv:null;
+    const pct=pnl!=null&&inv>0?(pnl/inv)*100:null;
+    if(ve)totEUR+=ve;totInv+=inv;
+    const ts=S.prices[p.cgId]?.ts;
+    return`<tr>
+      <td><strong>${p.name}</strong>${ts?` <span class="price-tag">${ageStr(ts)}</span>`:''}</td>
+      <td><span class="badge b-blue">${p.symbol}</span></td>
+      <td>${fn(p.units,p.units<1?8:4)}</td>
+      <td>${inv>0?fm(inv):'<span class="pna">—</span>'}</td>
+      <td>${avgBuy!=null?fm(avgBuy):'<span class="pna">—</span>'}</td>
+      <td>${pe!=null?fm(pe):'<span class="pna">No price</span>'}</td>
+      <td><strong>${ve!=null?fm(ve):'<span class="pna">No price</span>'}</strong></td>
+      <td class="${pc(pnl)}">${pnl!=null?fm(pnl):'<span class="pna">—</span>'}</td>
+      <td class="${pc(pct)}">${pct!=null?fp(pct):'<span class="pna">—</span>'}</td>
+      <td><button class="btn-s" onclick="openModal('${acc}','${p.id}')">Edit</button> <button class="btn-d" onclick="del('${acc}','${p.id}')">✕</button></td></tr>`;
+  }).join('');
+  const totPnl=totInv>0?totEUR-totInv:null,totPct=totInv>0?(totPnl/totInv)*100:null;
+  const el=document.getElementById('t-'+acc);
+  el.innerHTML=html+(rows.length?`<tr class="tr-total"><td colspan="3"><strong>TOTAL</strong></td>
+    <td><strong>${fm(totInv)}</strong></td><td></td><td></td>
+    <td><strong>${fm(totEUR)}</strong></td>
+    <td class="${pc(totPnl)}"><strong>${totPnl!=null?fm(totPnl):'—'}</strong></td>
+    <td class="${pc(totPct)}"><strong>${totPct!=null?fp(totPct):'—'}</strong></td><td></td></tr>`
+    :'<tr><td colspan="10" class="empty-st">No assets yet. Click "+ Add Asset" to get started.</td></tr>');
+  const upd=document.getElementById('u-'+acc);
+  if(upd){const firstTs=rows.map(p=>S.prices[p.cgId]?.ts).find(t=>t);upd.textContent=firstTs?'Updated '+ageStr(firstTs):'';}
+  document.getElementById('c-'+acc).innerHTML=`
+    <div class="card"><div class="cl">Total Value</div><div class="cv">${fm(totEUR)}</div></div>
+    <div class="card"><div class="cl">Total Invested</div><div class="cv">${fm(totInv)}</div></div>
+    <div class="card"><div class="cl">P&amp;L</div><div class="cv ${pc(totPnl)}">${totPnl!=null?fm(totPnl):'—'}</div><div class="cc ${pc(totPct)}">${totPct!=null?fp(totPct):'—'}</div></div>
+    <div class="card"><div class="cl">Holdings</div><div class="cv">${rows.length}</div></div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER WHITEBIT (fixed-term deposits + spot crypto)
+// ═══════════════════════════════════════════════════════════
+function renderWhitebit(){
+  const eurUsd=S.rates.eurUsd||1.085;
+  const usdToEur=u=>u/eurUsd;
+  const now=Date.now();
+  let totEUR=0,totInv=0;
+
+  // ── Fixed-term USDT deposits ──
+  const fRows=S.accounts.wb_fixed||[];
+  const fHtml=fRows.map(p=>{
+    const start=new Date(p.startDate||Date.now()).getTime();
+    const totalDays=p.termDays||365;
+    const elapsed=Math.min((now-start)/86400000,totalDays);
+    const daysLeft=Math.max(0,Math.ceil(totalDays-elapsed));
+    const interest=(p.principalUSDT||0)*(p.annualRatePct||0)/100*(elapsed/365);
+    const totalInterest=(p.principalUSDT||0)*(p.annualRatePct||0)/100*(totalDays/365);
+    const valEUR=usdToEur((p.principalUSDT||0)+interest);
+    const invE=usdToEur(p.principalUSDT||0);
+    totEUR+=valEUR;totInv+=invE;
+    const urgency=daysLeft<30?'neg':daysLeft<90?'gold':'pos';
+    return`<tr>
+      <td><strong>${p.name}</strong></td>
+      <td>${fn(p.principalUSDT,2)} USDT</td>
+      <td><span class="badge b-green">${p.annualRatePct}%</span></td>
+      <td>${totalDays}d</td>
+      <td class="${urgency}">${daysLeft}d</td>
+      <td class="pos">+${fn(interest,4)} <span class="nt">of +${fn(totalInterest,4)} USDT at maturity</span></td>
+      <td><strong>${fm(valEUR)}</strong></td>
+      <td class="nt">${p.note||''}</td>
+      <td><button class="btn-s" onclick="openModal('wb_fixed','${p.id}')">Edit</button> <button class="btn-d" onclick="del('wb_fixed','${p.id}')">✕</button></td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="9" class="empty-st">No fixed-term deposits. Click "+ Fixed Term" to add one.</td></tr>';
+
+  // ── Spot crypto ──
+  const cRows=S.accounts.whitebit||[];
+  const cHtml=cRows.map(p=>{
+    const pe=gp(p.cgId,'eur')||(gp(p.cgId,'usd')!=null?toEUR(gp(p.cgId,'usd')):null);
+    const ve=pe!=null?pe*p.units:null;
+    const inv=p.invested||0;
+    const avgBuy=p.units>0&&inv>0?inv/p.units:null;
+    const pnl=ve!=null&&inv>0?ve-inv:null;
+    const pct=pnl!=null&&inv>0?(pnl/inv)*100:null;
+    if(ve)totEUR+=ve;totInv+=inv;
+    return`<tr>
+      <td><strong>${p.name}</strong></td>
+      <td><span class="badge b-blue">${p.symbol}</span></td>
+      <td>${fn(p.units,p.units<1?8:4)}</td>
+      <td>${inv>0?fm(inv):'<span class="pna">—</span>'}</td>
+      <td>${avgBuy!=null?fm(avgBuy):'<span class="pna">—</span>'}</td>
+      <td>${pe!=null?fm(pe):'<span class="pna">—</span>'}</td>
+      <td><strong>${ve!=null?fm(ve):'<span class="pna">—</span>'}</strong></td>
+      <td class="${pc(pnl)}">${pnl!=null?fm(pnl):'<span class="pna">—</span>'}</td>
+      <td class="${pc(pct)}">${pct!=null?fp(pct):'<span class="pna">—</span>'}</td>
+      <td><button class="btn-s" onclick="openModal('whitebit','${p.id}')">Edit</button> <button class="btn-d" onclick="del('whitebit','${p.id}')">✕</button></td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="10" class="empty-st">No spot crypto holdings yet.</td></tr>';
+
+  document.getElementById('t-wb-fixed').innerHTML=fHtml;
+  document.getElementById('t-whitebit').innerHTML=cHtml;
+
+  const totPnl=totInv>0?totEUR-totInv:null,totPct=totPnl!=null?(totPnl/totInv)*100:null;
+  const principalUSD=fRows.reduce((s,p)=>s+(p.principalUSDT||0),0);
+  document.getElementById('c-whitebit').innerHTML=`
+    <div class="card"><div class="cl">Total Value</div><div class="cv">${fm(totEUR)}</div></div>
+    <div class="card"><div class="cl">Fixed Deposits</div><div class="cv">${fm(usdToEur(principalUSD))}</div><div class="cs">${fn(principalUSD,2)} USDT principal</div></div>
+    <div class="card"><div class="cl">P&amp;L</div><div class="cv ${pc(totPnl)}">${totPnl!=null?fm(totPnl):'—'}</div><div class="cc ${pc(totPct)}">${totPct!=null?fp(totPct):'—'}</div></div>
+    <div class="card"><div class="cl">Active Plans</div><div class="cv">${fRows.length}</div><div class="cs">fixed-term</div></div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER STOCKS
+// ═══════════════════════════════════════════════════════════
+function renderStocks(acc){
+  const rows=S.accounts[acc]||[];
+  let totInv=0,totVal=0;
+  const html=rows.map(p=>{
+    const isCash=p.type==='cash';
+    const pu=isCash?1:gp(p.symbol,'usd');
+    const vu=isCash?p.invested:(pu!=null?pu*p.units:null);
+    const ve=vu!=null?toEUR(vu):null;
+    const pnl=vu!=null?vu-p.invested:null;
+    const pct=(pnl!=null&&p.invested>0)?(pnl/p.invested)*100:null;
+    totInv+=p.invested||0;if(vu)totVal+=vu;
+    const ts=S.prices[p.symbol]?.ts;
+    return`<tr>
+      <td><strong>${p.name}</strong>${p.note?` <span class="nt">${p.note}</span>`:''}</td>
+      <td><span class="badge ${isCash?'b-gray':'b-blue'}">${p.symbol}</span></td>
+      <td>${fn(p.units,4)}</td><td>${fm(p.invested,'USD')}</td>
+      <td>${isCash?'—':fm(p.entry,'USD')}</td><td>${p.opened||'—'}</td>
+      <td>${isCash?fm(1,'USD'):(pu!=null?`${fm(pu,'USD')} <span class="price-tag">${ageStr(ts)}</span>`:'<span class="pna">No price</span>')}</td>
+      <td>${vu!=null?fm(vu,'USD'):'—'}</td><td><strong>${ve!=null?fm(ve):'—'}</strong></td>
+      <td class="${pc(pnl)}">${pnl!=null?fm(pnl,'USD'):'—'}</td>
+      <td class="${pc(pct)}">${pct!=null?fp(pct):'—'}</td>
+      <td><button class="btn-s" onclick="openModal('${acc}','${p.id}')">Edit</button> <button class="btn-d" onclick="del('${acc}','${p.id}')">✕</button></td></tr>`;
+  }).join('');
+  const totPnl=totVal-totInv,totPct=totInv>0?(totPnl/totInv)*100:0;
+  document.getElementById('t-'+acc).innerHTML=html+(rows.length?`<tr class="tr-total"><td colspan="3"><strong>TOTAL</strong></td>
+    <td><strong>${fm(totInv,'USD')}</strong></td><td colspan="3"></td><td><strong>${fm(totVal,'USD')}</strong></td>
+    <td><strong>${fm(toEUR(totVal))}</strong></td><td class="${pc(totPnl)}"><strong>${fm(totPnl,'USD')}</strong></td>
+    <td class="${pc(totPct)}"><strong>${fp(totPct)}</strong></td><td></td></tr>`
+    :'<tr><td colspan="12" class="empty-st">No positions yet.</td></tr>');
+  document.getElementById('c-'+acc).innerHTML=`
+    <div class="card"><div class="cl">Current Value</div><div class="cv">${fm(toEUR(totVal))}</div><div class="cs">${fm(totVal,'USD')}</div></div>
+    <div class="card"><div class="cl">Total Invested</div><div class="cv">${fm(toEUR(totInv))}</div><div class="cs">${fm(totInv,'USD')}</div></div>
+    <div class="card"><div class="cl">P&amp;L</div><div class="cv ${pc(totPnl)}">${fm(totPnl,'USD')}</div><div class="cc ${pc(totPct)}">${fp(totPct)}</div></div>
+    <div class="card"><div class="cl">Positions</div><div class="cv">${rows.length}</div></div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER REAL ESTATE
+// ═══════════════════════════════════════════════════════════
+function renderRealEstate(){
+  const rows=S.accounts.realestate||[];
+  const RE={land:'🌍 Land',rental:'🏘️ Rental'};
+  let totCapital=0,totPropEUR=0,totNetMonthly=0;
+
+  const html=rows.map(p=>{
+    if(p.type==='rental'){
+      const m=rentalMetrics(p);
+      const eq=calcMortgageEquity(p);
+      // For totals: use equity if available, else full property share
+      const valueForTotal=eq?eq.equityEUR:m.propValEUR;
+      totCapital+=m.capital; totPropEUR+=valueForTotal; totNetMonthly+=m.netMonthly;
+      const propGainEUR=valueForTotal-m.capital;
+      // Equity cell — if no mortgage data, assume 100% equity (no outstanding loan)
+      const eqCell=eq
+        ?`${fm(eq.equityEUR)}<br>
+           <span style="font-size:10px;color:var(--green)">${eq.equityPct.toFixed(1)}% of property</span><br>
+           <span style="font-size:10px;color:var(--muted)">+${fm(eq.monthlyGainEUR)}/mo principal<br>
+           ${eq.remaining} months left</span>`
+        :`${fm(m.propValEUR)}<br><span style="font-size:10px;color:var(--green)">100% yours</span>`;
+      return`<tr>
+        <td><strong>${p.name}</strong><br><span style="font-size:10px;color:var(--muted)">${p.country||''} · ${p.own*100}% yours</span></td>
+        <td><span class="badge b-orange">🏘️ Rental</span></td>
+        <td style="color:var(--muted)">${p.purchaseDate||'—'}</td>
+        <td>${fm(m.capital)}<br><span style="font-size:10px;color:var(--muted)">your cash in</span></td>
+        <td>${fm(m.propValEUR)}<br><span style="font-size:10px;color:var(--muted)">your share of property</span></td>
+        <td>${eqCell}</td>
+        <td class="${pc(m.rentEUR)}" style="font-size:12px">
+          +${fm(m.rentEUR)} rent<br>
+          <span style="color:var(--red)">−${fm(m.mortEUR)} mortgage</span><br>
+          <span style="color:var(--red)">−${fm(m.opExEUR)} opex</span><br>
+          <span style="color:var(--red)">−${fm(m.maintEUR)} maint/mo</span>
+        </td>
+        <td class="${pc(m.netMonthly)}"><strong>${fm(m.netMonthly)}</strong>/mo<br><span style="font-size:10px">${fm(m.annualNet)}/yr</span></td>
+        <td class="${pc(m.roi)}">${m.roi!=null?`<strong>${fp(m.roi)}</strong><br><span style="font-size:10px">cash-on-cash</span>`:'—'}</td>
+        <td class="nt">${p.note||''}</td>
+        <td><button class="btn-s" onclick="openModal('realestate','${p.id}')">Edit</button> <button class="btn-d" onclick="del('realestate','${p.id}')">✕</button></td></tr>`;
+    } else {
+      // Land: simple appreciation tracking (no mortgage, equity = full value)
+      const own=(p.ownershipPct||100)/100;
+      const buyEUR=anyToEUR(p.purchasePrice||0,p.purchaseCurrency||'EUR');
+      const curEUR=anyToEUR(p.currentValue||0,p.currentCurrency||'EUR')*own;
+      const pnl=curEUR-buyEUR,pct=buyEUR>0?(pnl/buyEUR)*100:null;
+      totCapital+=buyEUR; totPropEUR+=curEUR;
+      return`<tr>
+        <td><strong>${p.name}</strong><br><span style="font-size:10px;color:var(--muted)">${p.country||''} · ${own*100}% yours</span></td>
+        <td><span class="badge b-purple">🌍 Land</span></td>
+        <td style="color:var(--muted)">${p.purchaseDate||'—'}</td>
+        <td>${fm(buyEUR)}<br><span style="font-size:10px;color:var(--muted)">your capital</span></td>
+        <td>${fm(curEUR)}<br><span style="font-size:10px;color:var(--muted)">your share</span></td>
+        <td>${fm(curEUR)}<br><span style="font-size:10px;color:var(--green)">100% yours</span></td>
+        <td colspan="2" class="${pc(pnl)}">${fm(pnl)} (${fp(pct)})<br><span style="font-size:10px;color:var(--muted)">appreciation</span></td>
+        <td>—</td>
+        <td class="nt">${p.note||''}</td>
+        <td><button class="btn-s" onclick="openModal('realestate','${p.id}')">Edit</button> <button class="btn-d" onclick="del('realestate','${p.id}')">✕</button></td></tr>`;
+    }
+  }).join('');
+
+  const totAnnual=totNetMonthly*12;
+  const totROI=totCapital>0?(totAnnual/totCapital)*100:null;
+
+  document.getElementById('t-re').innerHTML=html+(rows.length?`<tr class="tr-total">
+    <td colspan="3"><strong>TOTAL</strong></td>
+    <td><strong>${fm(totCapital)}</strong></td>
+    <td></td>
+    <td><strong>${fm(totPropEUR)}</strong><br><span style="font-size:10px;color:var(--muted)">your total equity</span></td>
+    <td></td>
+    <td class="${pc(totNetMonthly)}"><strong>${fm(totNetMonthly)}/mo</strong></td>
+    <td class="${pc(totROI)}">${totROI!=null?`<strong>${fp(totROI)}</strong>`:'—'}</td>
+    <td colspan="2"></td></tr>`
+    :'<tr><td colspan="11" class="empty-st">No properties yet. Click "+ Add Property".</td></tr>');
+
+  document.getElementById('c-re').innerHTML=`
+    <div class="card"><div class="cl">Your Capital Invested</div><div class="cv">${fm(totCapital)}</div><div class="cs">Cash out-of-pocket (excl. loans)</div></div>
+    <div class="card"><div class="cl">Your Property Value</div><div class="cv">${fm(totPropEUR)}</div><div class="cs">Your share at market value</div></div>
+    <div class="card"><div class="cl">Net Cash Flow / Month</div><div class="cv ${pc(totNetMonthly)}">${totNetMonthly?fm(totNetMonthly):'—'}</div><div class="cs">Rent − mortgage − opex − maint</div></div>
+    <div class="card"><div class="cl">Annual Net Income</div><div class="cv ${pc(totAnnual)}">${totAnnual?fm(totAnnual):'—'}</div></div>
+    <div class="card"><div class="cl">Cash-on-Cash ROI</div><div class="cv ${pc(totROI)}">${totROI!=null?fp(totROI):'—'}</div><div class="cs">Annual net ÷ capital invested</div></div>
+    <div class="card"><div class="cl">Properties</div><div class="cv">${rows.length}</div></div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER REVOLUT
+// ═══════════════════════════════════════════════════════════
+function renderRevolut(){
+  const gv=goldVal();
+  const upd=document.getElementById('u-gold');
+  if(upd)upd.textContent=gv.priceEUR?`Gold: ${fm(gv.priceEUR)}/oz · ${ageStr(S.prices['XAU']?.ts||S.prices['GC=F']?.ts)}`:'Gold price not loaded';
+  let tInv=0,tVal=0,tUnits=0;
+  const gHtml=(S.accounts.revolut_gold||[]).map(p=>{
+    const cur=gv.priceEUR!=null?gv.priceEUR*p.units:null;
+    const pnl=cur!=null?cur-p.totalEUR:null,pct=(pnl!=null&&p.totalEUR>0)?(pnl/p.totalEUR)*100:null;
+    tInv+=p.totalEUR;tUnits+=p.units;if(cur)tVal+=cur;
+    return`<tr><td>${fn(p.units,4)} oz</td><td>${p.priceEUR?fm(p.priceEUR):'—'}</td><td>${p.priceUSD?fm(p.priceUSD,'USD'):'—'}</td>
+      <td>${fm(p.totalEUR)}</td><td>${p.date||'—'}</td>
+      <td><strong>${cur!=null?fm(cur):'<span class="pna">No price</span>'}</strong></td>
+      <td class="${pc(pnl)}">${pnl!=null?fm(pnl):'—'}</td><td class="${pc(pct)}">${pct!=null?fp(pct):'—'}</td>
+      <td><button class="btn-s" onclick="openModal('revolut_gold','${p.id}')">Edit</button> <button class="btn-d" onclick="del('revolut_gold','${p.id}')">✕</button></td></tr>`;
+  }).join('');
+  document.getElementById('t-rgold').innerHTML=gHtml+`<tr class="tr-total"><td><strong>${fn(tUnits,4)} oz</strong></td><td colspan="2"></td><td><strong>${fm(tInv)}</strong></td><td></td><td><strong>${fm(tVal||tInv)}</strong></td><td class="${pc(tVal-tInv)}"><strong>${fm(tVal-tInv)}</strong></td><td></td><td></td></tr>`;
+  let tCash=0;
+  const cHtml=(S.accounts.revolut_cash||[]).map(c=>{
+    const v=anyToEUR(c.amount,c.currency);tCash+=v;
+    return`<tr><td><span class="badge b-gold">${c.currency}</span></td><td>${fn(c.amount,2)}</td><td>${fm(v)}</td>
+      <td><button class="btn-s" onclick="openModal('revolut_cash','${c.id}')">Edit</button> <button class="btn-d" onclick="del('revolut_cash','${c.id}')">✕</button></td></tr>`;
+  }).join('')||'<tr><td colspan="4" class="empty-st">No cash entries yet</td></tr>';
+  document.getElementById('t-rcash').innerHTML=cHtml;
+  const tot=(tVal||tInv)+tCash;
+  document.getElementById('c-revolut').innerHTML=`
+    <div class="card"><div class="cl">Total Value</div><div class="cv">${fm(tot)}</div></div>
+    <div class="card"><div class="cl">Gold</div><div class="cv">${fn(tUnits,4)} oz</div><div class="cs">${fm(tVal||tInv)}</div></div>
+    <div class="card"><div class="cl">Gold P&amp;L</div><div class="cv ${pc(tVal-tInv)}">${fm(tVal-tInv)}</div></div>
+    <div class="card"><div class="cl">Gold Price</div><div class="cv">${gv.priceEUR?fm(gv.priceEUR):'—'}</div><div class="cs">per troy oz</div></div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER BRUBANK
+// ═══════════════════════════════════════════════════════════
+function renderBrubank(){
+  const rows=S.accounts.brubank||[];
+  const TL={stock_ars_live:'📊 Stock',stock_ars:'📊 Stock',plazo_fijo:'🏦 Plazo Fijo',cash_ars:'💵 ARS',cash_usd:'💵 USD',real_estate:'🏠 RE'};
+  const TB={stock_ars_live:'b-blue',stock_ars:'b-blue',plazo_fijo:'b-orange',cash_ars:'b-gold',cash_usd:'b-green',real_estate:'b-purple'};
+  let tot=0,totCost=0;
+  const html=rows.map(p=>{
+    const v=brubankItemVals(p);
+    tot+=v.eur; totCost+=v.costEUR;
+    let detail='',pnlHtml='—';
+    if(p.type==='stock_ars_live'){
+      const sym=p.symbol||'';
+      const curP=S.prices[sym]?.ars;
+      detail=`${p.qty} shares × ${curP?fn(curP,2):'<span class="pna">no price</span>'} ARS`;
+      if(v.hasCurPrice){
+        const pnl=v.eur-v.costEUR,pct=v.costEUR>0?(pnl/v.costEUR)*100:null;
+        pnlHtml=`<span class="${pc(pnl)}">${fm(pnl)}</span>${pct!=null?`<br><span style="font-size:10px" class="${pc(pct)}">${fp(pct)}</span>`:''}`;
+      }
+    }else if(p.type==='plazo_fijo'){
+      const status=v.isMatured?'<span style="color:var(--green)">✓ Matured</span>':`${v.daysLeft}d left`;
+      detail=`${fn(v.principalARS,0)} ARS × ${p.annualRatePct}% pa · ${status}`;
+      const interest=v.eur-v.costEUR;
+      pnlHtml=`<span class="${pc(interest)}">${fm(interest)}</span><br><span style="font-size:10px;color:var(--muted)">${fn(v.interestARS,0)} ARS earned</span>`;
+    }else if(p.type==='cash_ars'){
+      detail=fn(v.curARS,0)+' ARS';
+    }else if(p.type==='cash_usd'){
+      detail=fn(p.valueUSD,2)+' USD';
+    }else{
+      detail=p.curARS?fn(p.curARS,0)+' ARS':'—';
+      if(v.pnlARS){const pnl=v.eur-v.costEUR;pnlHtml=`<span class="${pc(pnl)}">${fm(pnl)}</span>`;}
+    }
+    return`<tr>
+      <td><strong>${p.name}</strong>${p.symbol?`<br><span class="badge b-gray" style="font-size:10px">${p.symbol}</span>`:''}</td>
+      <td><span class="badge ${TB[p.type]||'b-gray'}">${TL[p.type]||p.type}</span></td>
+      <td style="font-size:12px;color:var(--muted)">${detail}</td>
+      <td>${fm(v.costEUR)}</td>
+      <td><strong>${fm(v.eur)}</strong><br><span style="font-size:10px;color:var(--muted)">${fm(v.eur*(S.rates.eurUsd||1.085),'USD')}</span></td>
+      <td>${pnlHtml}</td>
+      <td>${p.date||p.startDate||'—'}</td>
+      <td><button class="btn-s" onclick="openModal('brubank','${p.id}')">Edit</button> <button class="btn-d" onclick="del('brubank','${p.id}')">✕</button></td></tr>`;
+  }).join('');
+  const pnlTot=tot-totCost,pctTot=totCost>0?(pnlTot/totCost)*100:null;
+  document.getElementById('t-brubank').innerHTML=html+(rows.length?`<tr class="tr-total">
+    <td colspan="3"><strong>TOTAL</strong></td>
+    <td>${fm(totCost)}</td>
+    <td><strong>${fm(tot)}</strong></td>
+    <td class="${pc(pnlTot)}"><strong>${fm(pnlTot)}</strong> ${pctTot!=null?`(${fp(pctTot)})`:''}
+    </td><td colspan="2"></td></tr>`:'<tr><td colspan="8" class="empty-st">No entries yet. Add stocks, plazo fijo, or cash.</td></tr>');
+  document.getElementById('c-brubank').innerHTML=`
+    <div class="card"><div class="cl">Total Value</div><div class="cv">${fm(tot)}</div><div class="cs">${fm(toUSD(tot),'USD')}</div></div>
+    <div class="card"><div class="cl">Total Invested</div><div class="cv">${fm(totCost)}</div></div>
+    <div class="card"><div class="cl">P&amp;L</div><div class="cv ${pc(pnlTot)}">${fm(pnlTot)}</div><div class="cc ${pc(pctTot)}">${pctTot!=null?fp(pctTot):'—'}</div></div>
+    <div class="card"><div class="cl">USD/ARS Rate</div><div class="cv">${fn(S.rates.usdArs,0)}</div><div class="cs">from Settings</div></div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER CASH
+// ═══════════════════════════════════════════════════════════
+function renderCash(){
+  const rows=S.accounts.cash||[];let tot=0;
+  const html=rows.map(c=>{
+    const v=anyToEUR(c.amount,c.currency);tot+=v;
+    return`<tr><td><strong>${c.desc}</strong></td><td>${c.bank||'—'}</td>
+      <td><span class="badge b-blue">${c.currency}</span></td><td>${fn(c.amount,2)}</td>
+      <td><strong>${fm(v)}</strong></td>
+      <td><button class="btn-s" onclick="openModal('cash','${c.id}')">Edit</button> <button class="btn-d" onclick="del('cash','${c.id}')">✕</button></td></tr>`;
+  }).join('')||'<tr><td colspan="6" class="empty-st">No cash entries. Add CSOB, Revolut cash, or any bank account here (supports EUR, USD, ARS, CZK…).</td></tr>';
+  document.getElementById('t-cash').innerHTML=html+(rows.length?`<tr class="tr-total"><td colspan="4"><strong>TOTAL</strong></td><td><strong>${fm(tot)}</strong></td><td></td></tr>`:'');
+  document.getElementById('c-cash').innerHTML=`
+    <div class="card"><div class="cl">Total (EUR)</div><div class="cv">${fm(tot)}</div></div>
+    <div class="card"><div class="cl">Entries</div><div class="cv">${rows.length}</div></div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER DOCTA BUSINESS
+// ═══════════════════════════════════════════════════════════
+function renderDocta(){
+  const rows=S.accounts.docta||[];
+  let totVal=0,totInv=0;
+  const TYPE_LABEL={equity:'Equity Stake',loan:'Shareholder Loan',receivable:'Receivable',owed_to_me:'📥 Owed to Me',i_owe:'💸 I Owe',other:'Other'};
+  const TYPE_BADGE={equity:'b-purple',loan:'b-blue',receivable:'b-gold',owed_to_me:'b-green',i_owe:'b-red',other:'b-gray'};
+  const html=rows.map(p=>{
+    const inv=anyToEUR(p.invested||0,p.investedCurrency||'EUR');
+    const val=p.currentValue!=null?anyToEUR(p.currentValue,p.currentCurrency||'EUR'):inv;
+    const pnl=val-inv,pct=inv>0?(pnl/inv)*100:null;
+    totVal+=val;totInv+=inv;
+    const t=p.type||'other';
+    return`<tr>
+      <td><strong>${p.name||'—'}</strong></td>
+      <td><span class="badge ${TYPE_BADGE[t]||'b-gray'}">${TYPE_LABEL[t]||t}</span></td>
+      <td>${fm(inv)}</td>
+      <td><strong>${fm(val)}</strong></td>
+      <td class="${pc(pnl)}">${fm(pnl)}</td>
+      <td class="${pc(pct)}">${pct!=null?fp(pct):'—'}</td>
+      <td>${p.date||'—'}</td>
+      <td class="nt">${p.note||''}</td>
+      <td><button class="btn-s" onclick="openModal('docta','${p.id}')">Edit</button> <button class="btn-d" onclick="del('docta','${p.id}')">✕</button></td></tr>`;
+  }).join('')||'<tr><td colspan="9" class="empty-st">No entries yet. Click "+ Add Entry" to track equity stakes, loans, receivables, or personal debts.</td></tr>';
+  const totPnl=totVal-totInv,totPct=totInv>0?(totPnl/totInv)*100:0;
+  document.getElementById('t-docta').innerHTML=html+(rows.length?`<tr class="tr-total"><td colspan="2"><strong>TOTAL</strong></td>
+    <td><strong>${fm(totInv)}</strong></td><td><strong>${fm(totVal)}</strong></td>
+    <td class="${pc(totPnl)}"><strong>${fm(totPnl)}</strong></td>
+    <td class="${pc(totPct)}"><strong>${fp(totPct)}</strong></td>
+    <td colspan="3"></td></tr>`:'');
+  document.getElementById('c-docta').innerHTML=`
+    <div class="card"><div class="cl">Total Value (EUR)</div><div class="cv">${fm(totVal)}</div><div class="cs">${fm(toUSD(totVal),'USD')}</div></div>
+    <div class="card"><div class="cl">Total Invested</div><div class="cv">${fm(totInv)}</div></div>
+    <div class="card"><div class="cl">P&amp;L</div><div class="cv ${pc(totPnl)}">${fm(totPnl)}</div><div class="cc ${pc(totPct)}">${fp(totPct)}</div></div>
+    <div class="card"><div class="cl">Entries</div><div class="cv">${rows.length}</div></div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER SETTINGS
+// ═══════════════════════════════════════════════════════════
+function renderSettings(){
+  document.getElementById('s-eurusd').value=S.rates.eurUsd;
+  document.getElementById('s-usdars').value=S.rates.usdArs;
+  document.getElementById('s-eurczk').value=S.rates.eurCzk;
+  document.getElementById('s-eurgbp').value=S.rates.eurGbp;
+  document.getElementById('s-eurchf').value=S.rates.eurChf;
+  document.getElementById('s-eurpln').value=S.rates.eurPln;
+  renderBackupSummary();
+  // Debug log
+  const logEl=document.getElementById('debug-log-out');
+  if(logEl){
+    const lines=S.refreshLog||[];
+    logEl.textContent=lines.length?lines.join('\n'):'No refresh log yet — click "⟳ Refresh Prices" in the sidebar.';
+  }
+  // Snapshots
+  const snapEl=document.getElementById('snap-list');
+  if(!S.snapshots.length){snapEl.innerHTML='<p class="hint">No snapshots yet.</p>';return;}
+  const hasND=S.snapshots.some(s=>s.newDeposits!==undefined);
+  let cumTOG=0;
+  const rows=S.snapshots.map((s,i)=>{
+    const prev=i>0?S.snapshots[i-1]:null;
+    const periodDelta=prev?s.totalEUR-prev.totalEUR:null;
+    const ndVal=s.newDeposits!=null?s.newDeposits:null;
+    const togPeriod=(periodDelta!=null&&ndVal!=null)?periodDelta-ndVal:null;
+    if(togPeriod!=null)cumTOG+=togPeriod;
+    const togCumul=togPeriod!=null?cumTOG:null;
+    return`<tr>
+      <td>${s.date}</td>
+      <td>${fm(s.totalEUR)}</td>
+      <td>${fm(s.invEUR||0)}</td>
+      ${hasND?`<td>${ndVal!=null?fm(ndVal):'<span class="pna">—</span>'}</td>`:''}
+      <td class="${pc(periodDelta)}">${periodDelta!=null?fm(periodDelta):'<span class="pna">—</span>'}</td>
+      ${hasND?`<td class="${pc(togPeriod)}">${togPeriod!=null?fm(togPeriod):'<span class="pna">—</span>'}</td>`:''}
+      ${hasND?`<td class="${pc(togCumul)}">${togCumul!=null?fm(togCumul):'<span class="pna">—</span>'}</td>`:''}
+      <td><button class="btn-d" onclick="delSnap(${i})">✕</button></td>
+    </tr>`;
+  }).join('');
+  snapEl.innerHTML=`<div class="tbr"><table>
+    <thead><tr>
+      <th>Date</th><th>Total Wealth</th><th>Cost Basis</th>
+      ${hasND?'<th>New Deposits</th>':''}
+      <th>Period Δ</th>
+      ${hasND?'<th>Organic Δ (period)</th><th>Organic Δ (cumulative)</th>':''}
+      <th></th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+// ── Network Test: diagnose whether fetches work from this browser ──
+async function runNetworkTest(){
+  const el=document.getElementById('debug-log-out');
+  el.textContent='Running network test…\n';
+  const append=s=>{el.textContent+=s+'\n';el.scrollTop=el.scrollHeight;};
+  const tests=[
+    ['Frankfurter (direct CORS)','https://api.frankfurter.app/latest?from=USD'],
+    ['Binance (direct CORS)','https://api.binance.com/api/v3/ping'],
+    ['CoinCap (direct CORS)','https://api.coincap.io/v2/assets/bitcoin'],
+    ['AllOrigins proxy','https://api.allorigins.win/raw?url=https%3A%2F%2Fapi.frankfurter.app%2Flatest%3Ffrom%3DUSD'],
+    ['CorsProxy.io','https://corsproxy.io/?url=https%3A%2F%2Fapi.frankfurter.app%2Flatest%3Ffrom%3DUSD'],
+  ];
+  let anyOk=false;
+  for(const[name,url]of tests){
+    try{
+      const r=await Promise.race([fetch(url,{mode:'cors'}),new Promise((_,rj)=>setTimeout(()=>rj(new Error('timeout')),6000))]);
+      if(r.ok){append(`✅ ${name} — OK (${r.status})`);anyOk=true;}
+      else append(`⚠ ${name} — HTTP ${r.status}`);
+    }catch(e){append(`❌ ${name} — ${e.message.slice(0,60)}`);}
+  }
+  append('\n'+(anyOk?'✅ At least one network source works. Prices should fetch OK.':'❌ ALL tests failed. Your browser is blocking outbound requests from file:// pages.\n\n   FIX: Serve WealthTrack.html via a local web server:\n   • Mac/Linux: cd to the folder, run: python3 -m http.server 8080\n     Then open: http://localhost:8080/WealthTrack.html\n   • Windows: npx serve . then open http://localhost:3000/WealthTrack.html\n   • Or drag the file into a browser that allows file:// network access.'));
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════════════════════
+function openModal(acc,editId=null){
+  MC={account:acc,editId};
+  const item=editId?(S.accounts[acc]||[]).find(p=>p.id===editId):null;
+  document.getElementById('m-title').textContent=(editId?'Edit':'Add')+' — '+acc.replace('_',' ').replace(/\b\w/g,c=>c.toUpperCase());
+  document.getElementById('m-body').innerHTML=buildForm(acc,item);
+  document.getElementById('modal-ov').classList.add('open');
+  // Hook type toggle for real estate
+  const ft=document.getElementById('f-type');
+  if(ft&&acc==='realestate'){toggleRentalFields(ft.value);ft.onchange=()=>toggleRentalFields(ft.value);}
+}
+function closeModal(){document.getElementById('modal-ov').classList.remove('open');}
+
+function toggleRentalFields(type){
+  const el=document.getElementById('rental-fields');
+  if(el)el.style.display=type==='rental'?'':'none';
+}
+
+function selCur(id,def='EUR'){
+  return`<select id="${id}" style="width:90px;flex-shrink:0">${CURRENCIES.map(c=>`<option${def===c?' selected':''}>${c}</option>`).join('')}</select>`;
+}
+function V(id,d=''){const el=document.getElementById(id);return el?(el.value??d):d;}
+function VN(id){const v=parseFloat(V(id));return isNaN(v)?0:v;}
+
+function buildForm(acc,item){
+  const v=(k,d='')=>item?(item[k]??d):d;
+
+  if(['kraken','exodus','whitebit'].includes(acc))return`
+    <div class="frow">
+      <div class="fg"><label>Asset Name</label><input id="f-name" value="${v('name')}"></div>
+      <div class="fg"><label>Symbol</label><input id="f-symbol" value="${v('symbol')}"></div>
+    </div>
+    <div class="fg"><label>CoinGecko ID <span class="hint" style="text-transform:none;letter-spacing:0">(from coingecko.com URL — e.g. "bitcoin", "ethereum", "the-open-network")</span></label><input id="f-cgid" value="${v('cgId')}" placeholder="e.g. bitcoin"></div>
+    <div class="frow">
+      <div class="fg"><label>Units held</label><input id="f-units" type="number" step="any" value="${v('units')}"></div>
+      <div class="fg"><label>Total Invested (EUR) <span class="hint" style="text-transform:none;letter-spacing:0">avg buy price × units</span></label><input id="f-invested" type="number" step="any" value="${v('invested',0)}" placeholder="e.g. 9157.75"></div>
+    </div>`;
+
+  if(['etoro','ibrk'].includes(acc))return`
+    <div class="frow">
+      <div class="fg"><label>Asset Name</label><input id="f-name" value="${v('name')}"></div>
+      <div class="fg"><label>Symbol <span class="hint" style="text-transform:none;letter-spacing:0">(Yahoo Finance ticker)</span></label>
+        <input id="f-symbol" value="${v('symbol')}" placeholder="e.g. SPY" style="text-transform:uppercase">
+        <button type="button" class="btn-lookup" id="btn-lk" onclick="lookupPrice()">🔍 Fetch Current Price from Market</button>
+        <div class="lookup-result" id="lk-result"></div>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Type</label><select id="f-type"><option value="stock"${v('type')!=='cash'?' selected':''}>Stock / ETF</option><option value="cash"${v('type')==='cash'?' selected':''}>Cash</option></select></div>
+      <div class="fg"><label>Units</label><input id="f-units" type="number" step="any" value="${v('units')}" oninput="autoInvested()"></div>
+    </div>
+    <div class="frow">
+      <div class="fg">
+        <label>Entry Price / Unit (USD) <span class="hint" style="text-transform:none;letter-spacing:0">price you paid per share</span></label>
+        <input id="f-entry" type="number" step="any" value="${v('entry')}" oninput="autoInvested()">
+      </div>
+      <div class="fg">
+        <label>Total Invested (USD) <span class="hint" style="text-transform:none;letter-spacing:0">auto = units × entry price</span></label>
+        <input id="f-invested" type="number" step="any" value="${v('invested')||''}" placeholder="auto-calculated">
+      </div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Date Opened</label><input id="f-opened" type="date" value="${v('opened')}"></div>
+      <div class="fg"><label>Note</label><input id="f-note" value="${v('note')}"></div>
+    </div>`;
+
+  if(acc==='realestate'){
+    const type=item?.type||'land';
+    const priceCur=f=>v(f,'EUR');
+    return`
+    <div class="frow">
+      <div class="fg"><label>Property Name</label><input id="f-name" value="${v('name')}"></div>
+      <div class="fg"><label>Country / Location</label><input id="f-country" value="${v('country')}"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Investment Type</label>
+        <select id="f-type">
+          <option value="land"${type==='land'?' selected':''}>🌍 Land (buy & appreciate)</option>
+          <option value="rental"${type==='rental'?' selected':''}>🏘️ Rental (mortgage + rent)</option>
+        </select>
+      </div>
+      <div class="fg"><label>Purchase Date</label><input id="f-pdate" type="date" value="${v('purchaseDate')}"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Your Ownership % <span class="hint" style="text-transform:none;letter-spacing:0">50 if bought 50/50</span></label>
+        <input id="f-own" type="number" min="1" max="100" step="0.1" value="${v('ownershipPct',100)}" placeholder="100">
+      </div>
+      <div class="fg"><label>Your Capital Invested <span class="hint" style="text-transform:none;letter-spacing:0">your cash only — downpayment + taxes + costs (NOT the loan)</span></label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="f-pprice" type="number" step="any" value="${v('purchasePrice')}" style="flex:1;min-width:0" placeholder="e.g. 28500">
+          ${selCur('f-pcur',v('purchaseCurrency','EUR'))}
+        </div>
+      </div>
+    </div>
+    <div class="fg">
+      <label>Total Property Current Value <span class="hint" style="text-transform:none;letter-spacing:0">full market value (your share is computed via ownership %)</span></label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="f-cprice" type="number" step="any" value="${v('currentValue')}" style="flex:1;min-width:0">
+        ${selCur('f-ccur',v('currentCurrency','EUR'))}
+      </div>
+    </div>
+    <div id="rental-fields" style="display:${type==='rental'?'block':'none'}">
+      <hr style="border-color:var(--border);margin:12px 0">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;font-weight:600">RENTAL INCOME & COSTS — enter TOTAL amounts, your share computed via ownership %</div>
+      <div class="frow">
+        <div class="fg"><label>Monthly Rent (total)</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="f-rent" type="number" step="any" value="${v('monthlyRent',0)}" style="flex:1;min-width:0">
+            ${selCur('f-rcur',v('rentCurrency','EUR'))}
+          </div>
+        </div>
+        <div class="fg"><label>Monthly Mortgage (total)</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="f-mort" type="number" step="any" value="${v('monthlyMortgage',0)}" style="flex:1;min-width:0">
+            ${selCur('f-mcur',v('mortgageCurrency','EUR'))}
+          </div>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Monthly Operating Costs (total) <span class="hint" style="text-transform:none;letter-spacing:0">HOA, insurance, utilities...</span></label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="f-opex" type="number" step="any" value="${v('monthlyOpEx',0)}" style="flex:1;min-width:0" placeholder="0">
+            ${selCur('f-ocur',v('opExCurrency','EUR'))}
+          </div>
+        </div>
+        <div class="fg"><label>Annual Maintenance Budget (total) <span class="hint" style="text-transform:none;letter-spacing:0">repairs, unexpected costs...</span></label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="f-maint" type="number" step="any" value="${v('annualMaintenance',0)}" style="flex:1;min-width:0" placeholder="0">
+            ${selCur('f-acur',v('maintCurrency','EUR'))}
+          </div>
+        </div>
+      </div>
+      <hr style="border-color:var(--border);margin:12px 0">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;font-weight:600">MORTGAGE DETAILS — for equity tracking (optional but recommended)</div>
+      <div class="frow">
+        <div class="fg"><label>Original Loan Amount <span class="hint" style="text-transform:none;letter-spacing:0">total borrowed at start</span></label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="f-mprincipal" type="number" step="any" value="${v('mortgagePrincipal',''||0)}" style="flex:1;min-width:0" placeholder="e.g. 200000">
+            ${selCur('f-mortcur2',v('mortgageCurrency','EUR'))}
+          </div>
+        </div>
+        <div class="fg"><label>Annual Interest Rate % <span class="hint" style="text-transform:none;letter-spacing:0">fixed rate</span></label>
+          <input id="f-mrate" type="number" step="0.01" min="0" max="30" value="${v('mortgageRatePct','')}" placeholder="e.g. 3.5">
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Total Term <span class="hint" style="text-transform:none;letter-spacing:0">in months (e.g. 360 = 30 years)</span></label>
+          <input id="f-mterm" type="number" step="1" min="1" value="${v('mortgageTermMonths','')}" placeholder="e.g. 360">
+        </div>
+        <div class="fg"><label>Mortgage Start Date</label>
+          <input id="f-mstart" type="date" value="${v('mortgageStartDate','')}">
+        </div>
+      </div>
+    </div>
+    <div class="fg" style="margin-top:8px"><label>Note</label><input id="f-note" value="${v('note')}"></div>`;
+  }
+
+  if(acc==='revolut_gold')return`
+    <div class="frow">
+      <div class="fg"><label>Units (troy oz)</label><input id="f-units" type="number" step="any" value="${v('units')}"></div>
+      <div class="fg"><label>Date Purchased</label><input id="f-date" type="date" value="${v('date')}"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Purchase Price (EUR/oz)</label><input id="f-peur" type="number" step="any" value="${v('priceEUR')}"></div>
+      <div class="fg"><label>Purchase Price (USD/oz)</label><input id="f-pusd" type="number" step="any" value="${v('priceUSD')}"></div>
+    </div>
+    <div class="fg"><label>Total Invested (EUR) <span class="hint" style="text-transform:none;letter-spacing:0">(auto-calculates if blank)</span></label>
+      <input id="f-teur" type="number" step="any" value="${v('totalEUR')}"></div>`;
+
+  if(acc==='revolut_cash')return`
+    <div class="frow">
+      <div class="fg"><label>Currency</label>${selCur('f-cur',v('currency','EUR'))}</div>
+      <div class="fg"><label>Amount</label><input id="f-amount" type="number" step="any" value="${v('amount')}"></div>
+    </div>`;
+
+  if(acc==='brubank'){
+    const type=item?.type||'stock_ars_live';
+    const isStock=['stock_ars_live','stock_ars'].includes(type);
+    const isPlazo=type==='plazo_fijo';
+    const isCash=['cash_ars','cash_usd'].includes(type);
+    const isLegacy=type==='stock_ars';
+    return`
+    <div class="frow">
+      <div class="fg"><label>Name / Description</label><input id="f-name" value="${v('name')}"></div>
+      <div class="fg"><label>Type</label>
+        <select id="f-type" onchange="toggleBrubankFields(this.value)">
+          <option value="stock_ars_live"${type==='stock_ars_live'?' selected':''}>📊 Stock (ARS) — live price</option>
+          <option value="plazo_fijo"${type==='plazo_fijo'?' selected':''}>🏦 Plazo Fijo / Fixed Term</option>
+          <option value="cash_ars"${type==='cash_ars'?' selected':''}>💵 Cash (ARS pesos)</option>
+          <option value="cash_usd"${type==='cash_usd'?' selected':''}>💵 Cash (USD dollars)</option>
+          ${isLegacy?`<option value="stock_ars" selected>📊 Stock (ARS) — manual</option>`:''}
+        </select>
+      </div>
+    </div>
+
+    <div id="bb-stock" style="display:${isStock?'block':'none'}">
+      <div class="frow">
+        <div class="fg">
+          <label>Yahoo Finance Ticker <span class="hint" style="text-transform:none">e.g. YPFD.BA, GGAL.BA, BMA.BA</span></label>
+          <input id="f-symbol" value="${v('symbol','')}" placeholder="YPFD.BA" style="text-transform:uppercase">
+          <button type="button" class="btn-lookup" onclick="lookupBrubankPrice()">🔍 Fetch Current ARS Price</button>
+          <div class="lookup-result" id="lk-bb-result"></div>
+        </div>
+        <div class="fg"><label>Quantity (shares)</label>
+          <input id="f-qty" type="number" step="any" value="${v('qty',1)}" oninput="autoBBCost()">
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Purchase Price / Share (ARS)</label>
+          <input id="f-costprice" type="number" step="any" value="${v('costPriceARS',0)}" placeholder="price per share" oninput="autoBBCost()">
+        </div>
+        <div class="fg"><label>Total Cost (ARS) <span class="hint" style="text-transform:none">auto = qty × purchase price</span></label>
+          <input id="f-totalcost" type="number" step="any" value="${v('totalCostARS', (v('costPriceARS',0)*v('qty',1))||v('costARS',0)||0)}" placeholder="auto-calculated">
+        </div>
+      </div>
+    </div>
+
+    <div id="bb-plazo" style="display:${isPlazo?'block':'none'}">
+      <div class="frow">
+        <div class="fg"><label>Principal (ARS)</label>
+          <input id="f-principal" type="number" step="any" value="${v('principalARS',0)}" placeholder="e.g. 500000">
+        </div>
+        <div class="fg"><label>Annual Interest Rate (%)</label>
+          <input id="f-rate" type="number" step="0.01" value="${v('annualRatePct',0)}" placeholder="e.g. 38">
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Start Date</label><input id="f-startdate" type="date" value="${v('startDate')}"></div>
+        <div class="fg"><label>Term (days)</label>
+          <input id="f-termdays" type="number" step="1" value="${v('termDays',30)}" placeholder="30">
+        </div>
+      </div>
+    </div>
+
+    <div id="bb-cash" style="display:${isCash?'block':'none'}">
+      <div class="fg" id="bb-cash-label">
+        <label id="bb-cash-lbl">${type==='cash_usd'?'Amount (USD)':'Amount (ARS pesos)'}</label>
+        <input id="f-cashamt" type="number" step="any" value="${type==='cash_usd'?(v('valueUSD',0)):(v('curARS',0))}">
+      </div>
+    </div>
+
+    <div id="bb-legacy" style="display:${isLegacy?'block':'none'}">
+      <div class="frow">
+        <div class="fg"><label>Qty</label><input id="f-qty2" type="number" step="any" value="${v('qty',1)}"></div>
+        <div class="fg"><label>Total Cost (ARS)</label><input id="f-costars" type="number" step="any" value="${v('costARS',0)}"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Current Value (ARS)</label><input id="f-curars" type="number" step="any" value="${v('curARS',0)}"></div>
+        <div class="fg"><label>Value (USD)</label><input id="f-vusd" type="number" step="any" value="${v('valueUSD',0)}"></div>
+      </div>
+      <div class="fg"><label>Value (EUR)</label><input id="f-veur" type="number" step="any" value="${v('valueEUR',0)}"></div>
+    </div>
+
+    <div class="frow" style="margin-top:6px">
+      <div class="fg"><label>Date</label><input id="f-date" type="date" value="${v('date')}"></div>
+      <div class="fg"><label>Note</label><input id="f-note" value="${v('note')}"></div>
+    </div>`;
+  }
+
+  if(acc==='cash')return`
+    <div class="fg"><label>Description (e.g. CSOB Savings, Revolut EUR)</label><input id="f-desc" value="${v('desc')}"></div>
+    <div class="fg"><label>Bank / Location</label><input id="f-bank" value="${v('bank')}"></div>
+    <div class="frow">
+      <div class="fg"><label>Currency</label>${selCur('f-cur',v('currency','EUR'))}</div>
+      <div class="fg"><label>Amount</label><input id="f-amount" type="number" step="any" value="${v('amount')}"></div>
+    </div>`;
+
+  if(acc==='wb_fixed')return`
+    <div class="fg"><label>Name</label><input id="f-name" value="${v('name')}" placeholder="e.g. USDT Fixed Term (1Y)"></div>
+    <div class="frow">
+      <div class="fg"><label>Principal (USDT)</label><input id="f-principal" type="number" step="any" value="${v('principalUSDT')}"></div>
+      <div class="fg"><label>APR (%)</label><input id="f-rate" type="number" step="0.01" value="${v('annualRatePct')}" placeholder="e.g. 20.26"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Start Date</label><input id="f-startdate" type="date" value="${v('startDate')}"></div>
+      <div class="fg"><label>Term (days)</label><input id="f-termdays" type="number" step="1" value="${v('termDays',365)}" placeholder="365 = 1 year, 182 = 6 months"></div>
+    </div>
+    <div class="fg"><label>Note</label><input id="f-note" value="${v('note')}"></div>`;
+
+  if(acc==='docta')return`
+    <div class="fg"><label>Name / Description</label><input id="f-name" value="${v('name')}"></div>
+    <div class="fg"><label>Type</label><select id="f-type">
+      <option value="equity"${v('type','equity')==='equity'?' selected':''}>Equity Stake</option>
+      <option value="loan"${v('type')==='loan'?' selected':''}>Shareholder Loan</option>
+      <option value="receivable"${v('type')==='receivable'?' selected':''}>Receivable / Dividend</option>
+      <option value="owed_to_me"${v('type')==='owed_to_me'?' selected':''}>📥 Owed to Me</option>
+      <option value="i_owe"${v('type')==='i_owe'?' selected':''}>💸 I Owe</option>
+      <option value="other"${v('type')==='other'?' selected':''}>Other</option>
+    </select></div>
+    <div class="frow">
+      <div class="fg"><label>Amount Invested</label><input id="f-invested" type="number" step="any" value="${v('invested')}"></div>
+      <div class="fg"><label>Currency</label>${selCur('f-invcur',v('investedCurrency','EUR'))}</div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Current Est. Value <span class="hint" style="text-transform:none;letter-spacing:0;display:inline">(leave blank = same as invested)</span></label><input id="f-curval" type="number" step="any" value="${v('currentValue')}" placeholder="e.g. 15000"></div>
+      <div class="fg"><label>Currency</label>${selCur('f-curcur',v('currentCurrency','EUR'))}</div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Date</label><input id="f-date" type="date" value="${v('date')}"></div>
+      <div class="fg"><label>Note</label><input id="f-note" value="${v('note')}"></div>
+    </div>`;
+
+  return'<p>Unknown form</p>';
+}
+
+function saveModal(){
+  const{account:acc,editId}=MC;let item;
+  if(['kraken','exodus','whitebit'].includes(acc)){
+    item={id:editId||gid(),name:V('f-name'),symbol:V('f-symbol').toUpperCase(),cgId:V('f-cgid').toLowerCase().trim(),units:VN('f-units'),invested:VN('f-invested')||0};
+  }else if(['etoro','ibrk'].includes(acc)){
+    item={id:editId||gid(),name:V('f-name'),symbol:V('f-symbol').toUpperCase(),type:V('f-type'),units:VN('f-units'),invested:VN('f-invested'),entry:VN('f-entry'),opened:V('f-opened'),note:V('f-note')};
+  }else if(acc==='realestate'){
+    const type=V('f-type');
+    const own=Math.min(100,Math.max(1,VN('f-own')||100));
+    item={id:editId||gid(),name:V('f-name'),country:V('f-country'),type,
+      ownershipPct:own,
+      purchasePrice:VN('f-pprice'),purchaseCurrency:V('f-pcur'),
+      currentValue:VN('f-cprice'),currentCurrency:V('f-ccur'),
+      purchaseDate:V('f-pdate'),
+      monthlyRent:type==='rental'?VN('f-rent'):0,rentCurrency:type==='rental'?V('f-rcur'):'EUR',
+      monthlyMortgage:type==='rental'?VN('f-mort'):0,mortgageCurrency:type==='rental'?V('f-mortcur2')||V('f-mcur'):'EUR',
+      monthlyOpEx:type==='rental'?VN('f-opex'):0,opExCurrency:type==='rental'?V('f-ocur'):'EUR',
+      annualMaintenance:type==='rental'?VN('f-maint'):0,maintCurrency:type==='rental'?V('f-acur'):'EUR',
+      mortgagePrincipal:type==='rental'?VN('f-mprincipal')||null:null,
+      mortgageRatePct:type==='rental'?VN('f-mrate')||null:null,
+      mortgageTermMonths:type==='rental'?VN('f-mterm')||null:null,
+      mortgageStartDate:type==='rental'?V('f-mstart')||null:null,
+      note:V('f-note')};
+  }else if(acc==='revolut_gold'){
+    const u=VN('f-units'),pe=VN('f-peur');
+    item={id:editId||gid(),units:u,priceEUR:pe||null,priceUSD:VN('f-pusd')||null,totalEUR:VN('f-teur')||pe*u,date:V('f-date')};
+  }else if(acc==='revolut_cash'){
+    item={id:editId||gid(),currency:V('f-cur'),amount:VN('f-amount')};
+  }else if(acc==='brubank'){
+    const t=V('f-type');
+    if(t==='stock_ars_live'){
+      const qty=VN('f-qty'),cp=VN('f-costprice');
+      item={id:editId||gid(),name:V('f-name'),type:t,symbol:V('f-symbol').toUpperCase().trim(),
+        qty,costPriceARS:cp,totalCostARS:VN('f-totalcost')||(qty*cp),date:V('f-date'),note:V('f-note')};
+    }else if(t==='plazo_fijo'){
+      item={id:editId||gid(),name:V('f-name'),type:t,principalARS:VN('f-principal'),
+        annualRatePct:VN('f-rate'),startDate:V('f-startdate'),termDays:VN('f-termdays')||30,
+        date:V('f-date'),note:V('f-note')};
+    }else if(t==='cash_ars'){
+      item={id:editId||gid(),name:V('f-name'),type:t,curARS:VN('f-cashamt'),date:V('f-date'),note:V('f-note')};
+    }else if(t==='cash_usd'){
+      item={id:editId||gid(),name:V('f-name'),type:t,valueUSD:VN('f-cashamt'),date:V('f-date'),note:V('f-note')};
+    }else{ // legacy stock_ars
+      item={id:editId||gid(),name:V('f-name'),type:t,qty:VN('f-qty2'),costARS:VN('f-costars'),
+        curARS:VN('f-curars'),valueUSD:VN('f-vusd'),valueEUR:VN('f-veur'),date:V('f-date'),note:V('f-note')};
+    }
+  }else if(acc==='cash'){
+    item={id:editId||gid(),desc:V('f-desc'),bank:V('f-bank'),currency:V('f-cur'),amount:VN('f-amount')};
+  }else if(acc==='wb_fixed'){
+    item={id:editId||gid(),name:V('f-name'),principalUSDT:VN('f-principal'),annualRatePct:VN('f-rate'),startDate:V('f-startdate'),termDays:VN('f-termdays')||365,note:V('f-note')};
+  }else if(acc==='docta'){
+    const cv=document.getElementById('f-curval').value.trim();
+    item={id:editId||gid(),name:V('f-name'),type:V('f-type')||'equity',
+      invested:VN('f-invested'),investedCurrency:V('f-invcur')||'EUR',
+      currentValue:cv!==''?VN('f-curval'):null,currentCurrency:V('f-curcur')||'EUR',
+      date:V('f-date'),note:V('f-note')};
+  }
+  if(!item)return;
+  const arr=S.accounts[acc];
+  if(editId){const i=arr.findIndex(p=>p.id===editId);if(i>=0)arr[i]=item;}else arr.push(item);
+  save();closeModal();
+  const PM={kraken:'kraken',exodus:'exodus',whitebit:'whitebit',wb_fixed:'whitebit',etoro:'etoro',ibrk:'ibrk',realestate:'realestate',revolut_gold:'revolut',revolut_cash:'revolut',brubank:'brubank',cash:'cash',docta:'docta'};
+  renderPage(PM[acc]||acc);
+}
+
+function del(acc,id){
+  if(!confirm('Remove this entry?'))return;
+  S.accounts[acc]=S.accounts[acc].filter(p=>p.id!==id);save();
+  const PM={kraken:'kraken',exodus:'exodus',whitebit:'whitebit',wb_fixed:'whitebit',etoro:'etoro',ibrk:'ibrk',realestate:'realestate',revolut_gold:'revolut',revolut_cash:'revolut',brubank:'brubank',cash:'cash',docta:'docta'};
+  renderPage(PM[acc]||acc);
+}
+
+// ── Brubank form helpers ──────────────────────────────────
+function toggleBrubankFields(type){
+  document.getElementById('bb-stock').style.display=['stock_ars_live','stock_ars'].includes(type)?'block':'none';
+  document.getElementById('bb-plazo').style.display=type==='plazo_fijo'?'block':'none';
+  document.getElementById('bb-cash').style.display=['cash_ars','cash_usd'].includes(type)?'block':'none';
+  document.getElementById('bb-legacy').style.display=type==='stock_ars'?'block':'none';
+  const lbl=document.getElementById('bb-cash-lbl');
+  if(lbl)lbl.textContent=type==='cash_usd'?'Amount (USD)':'Amount (ARS pesos)';
+}
+function autoBBCost(){
+  const qty=parseFloat(document.getElementById('f-qty')?.value||0);
+  const cp=parseFloat(document.getElementById('f-costprice')?.value||0);
+  const tc=document.getElementById('f-totalcost');
+  if(tc&&qty>0&&cp>0)tc.value=+(qty*cp).toFixed(2);
+}
+async function lookupBrubankPrice(){
+  const sym=(document.getElementById('f-symbol')?.value||'').toUpperCase().trim();
+  if(!sym){alert('Enter a ticker first (e.g. YPFD.BA)');return;}
+  const res=document.getElementById('lk-bb-result');
+  res.textContent='Fetching…';res.style.color='var(--muted)';
+  const price=await fetchYahoo(sym);
+  if(price&&price>0){
+    res.textContent=`✅ Current price: ${fn(price,2)} ARS`;res.style.color='var(--green)';
+    // Store temporarily and auto-fill curARS display
+    S.prices[sym]={ars:price,usd:price/S.rates.usdArs,eur:price/S.rates.usdArs/S.rates.eurUsd,ts:Date.now()};
+  }else{
+    res.textContent='⚠ Could not fetch price. Check ticker or try Refresh Prices.';res.style.color='var(--red)';
+  }
+}
+
+// Auto-fill Total Invested = units × entry price
+function autoInvested(){
+  const units=parseFloat(document.getElementById('f-units')?.value);
+  const entry=parseFloat(document.getElementById('f-entry')?.value);
+  const inv=document.getElementById('f-invested');
+  if(inv&&units>0&&entry>0) inv.value=+(units*entry).toFixed(2);
+}
+
+// ═══════════════════════════════════════════════════════════
+// SYMBOL PRICE LOOKUP (for eToro/IBRK modal)
+// ═══════════════════════════════════════════════════════════
+async function lookupPrice(){
+  const sym=V('f-symbol').toUpperCase().trim();
+  if(!sym){alert('Enter a symbol first (e.g. SPY, MSFT, TSLA)');return;}
+  const btn=document.getElementById('btn-lk');
+  const res=document.getElementById('lk-result');
+  btn.disabled=true;btn.textContent='🔄 Fetching…';
+  res.style.display='none';
+  const price=await fetchYahoo(sym);
+  btn.disabled=false;btn.textContent='🔍 Fetch Current Price from Market';
+  if(price){
+    S.prices[sym]={usd:price,eur:toEUR(price),ts:Date.now()};save();
+    res.style.display='block';
+    res.innerHTML=`✅ <strong>${sym}</strong>: ${fm(price,'USD')} · ${fm(toEUR(price),'EUR')} <span style="color:var(--muted);font-size:10px">(from Yahoo Finance)</span>`;
+    res.style.color='var(--green)';
+  }else{
+    res.style.display='block';
+    res.innerHTML=`❌ Could not fetch price for <strong>${sym}</strong>. Check the symbol or enter price manually via the table.`;
+    res.style.color='var(--red)';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// SNAPSHOTS
+// ═══════════════════════════════════════════════════════════
+let chartPeriod='all';
+
+function takeSnapshot(){
+  const w=totalWealth();
+  const date=new Date().toISOString().slice(0,7);
+  document.getElementById('snap-date-lbl').textContent=date;
+  document.getElementById('snap-deposits').value='0';
+  document.getElementById('sp-wealth').textContent=fm(w.eur);
+  document.getElementById('sp-dep').textContent=fm(0);
+  const last=S.snapshots[S.snapshots.length-1];
+  const tog=last?w.eur-last.totalEUR:null;
+  const orgEl=document.getElementById('sp-org');
+  orgEl.textContent=tog!=null?fm(tog):'—';
+  orgEl.className=tog!=null?(tog>=0?'pos':'neg'):'neu';
+  document.getElementById('snap-ov').classList.add('open');
+}
+
+function updateSnapPreview(){
+  const dep=parseFloat(document.getElementById('snap-deposits').value)||0;
+  const w=totalWealth();
+  const last=S.snapshots[S.snapshots.length-1];
+  document.getElementById('sp-dep').textContent=fm(dep);
+  const tog=last?w.eur-last.totalEUR-dep:null;
+  const orgEl=document.getElementById('sp-org');
+  orgEl.textContent=tog!=null?fm(tog):'—';
+  orgEl.className=tog!=null?(tog>=0?'pos':'neg'):'neu';
+}
+
+function confirmSnapshot(){
+  const w=totalWealth();
+  const date=new Date().toISOString().slice(0,7);
+  const newDeposits=parseFloat(document.getElementById('snap-deposits').value)||0;
+  S.snapshots=S.snapshots.filter(s=>s.date!==date);
+  S.snapshots.push({date,totalEUR:w.eur,totalUSD:w.usd,invEUR:w.invEUR,newDeposits,at:new Date().toISOString()});
+  S.snapshots.sort((a,b)=>a.date.localeCompare(b.date));
+  save();
+  document.getElementById('snap-ov').classList.remove('open');
+  renderDash();
+}
+
+function setChartPeriod(p,btn){
+  chartPeriod=p;
+  document.querySelectorAll('.btn-period').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGrowthChart();
+}
+
+function delSnap(i){if(!confirm('Delete snapshot?'))return;S.snapshots.splice(i,1);save();renderSettings();}
+
+// ═══════════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════════
+function saveSettings(){
+  ['eurUsd','usdArs','eurCzk','eurGbp','eurChf','eurPln'].forEach(k=>{
+    const el=document.getElementById('s-'+k.toLowerCase().replace('eur','eur').replace('usd','usd'));
+    // map field ids
+  });
+  S.rates.eurUsd=parseFloat(document.getElementById('s-eurusd').value)||S.rates.eurUsd;
+  S.rates.usdArs=parseFloat(document.getElementById('s-usdars').value)||S.rates.usdArs;
+  S.rates.eurCzk=parseFloat(document.getElementById('s-eurczk').value)||S.rates.eurCzk;
+  S.rates.eurGbp=parseFloat(document.getElementById('s-eurgbp').value)||S.rates.eurGbp;
+  S.rates.eurChf=parseFloat(document.getElementById('s-eurchf').value)||S.rates.eurChf;
+  S.rates.eurPln=parseFloat(document.getElementById('s-eurpln').value)||S.rates.eurPln;
+  save();alert('Rates saved!');
+}
+function backupSummary(state){
+  const accounts=Object.keys(state.accounts||{});
+  const snapCount=(state.snapshots||[]).length;
+  const bizMonths=Object.keys(state.biz?.months||{}).sort();
+  const lastSnap=snapCount?state.snapshots[snapCount-1]?.date:'none';
+  const lastExport=state._lastExport?new Date(state._lastExport).toLocaleString():'never';
+  return [
+    `<strong style="color:var(--text)">Accounts:</strong> ${accounts.join(', ')||'none'}`,
+    `<strong style="color:var(--text)">Snapshots:</strong> ${snapCount} (last: ${lastSnap})`,
+    `<strong style="color:var(--text)">Biz months:</strong> ${bizMonths.length?bizMonths[0]+' → '+bizMonths[bizMonths.length-1]:'none'}`,
+    `<strong style="color:var(--text)">Last export:</strong> ${lastExport}`,
+  ].join('<br>');
+}
+function renderBackupSummary(){
+  const el=document.getElementById('backup-summary');
+  if(el)el.innerHTML=backupSummary(S);
+}
+function exportData(){
+  S._lastExport=Date.now();
+  save();
+  const json=JSON.stringify(S,null,2);
+  const kb=(json.length/1024).toFixed(1);
+  const ts=new Date().toISOString().slice(0,16).replace('T','_').replace(':','-');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([json],{type:'application/json'}));
+  a.download=`wealthtrack_backup_${ts}.json`;
+  a.click();
+  const msg=document.getElementById('import-msg');
+  if(msg){msg.style.color='var(--green)';msg.textContent=`✅ Exported ${kb} KB — save this file somewhere safe!`;}
+  renderBackupSummary();
+}
+function importData(e){
+  const f=e.target.files[0];if(!f)return;
+  const msg=document.getElementById('import-msg');
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const parsed=JSON.parse(ev.target.result);
+      if(typeof parsed!=='object'||!parsed.accounts) throw new Error('Invalid WealthTrack backup file');
+      const summary=backupSummary(parsed);
+      const kb=(ev.target.result.length/1024).toFixed(1);
+      if(!confirm(`Restore this backup?\n\n${kb} KB file\n\nThis will OVERWRITE all current data. Continue?`)){
+        e.target.value='';return;
+      }
+      S=parsed;fixKeys();save();
+      if(msg){msg.style.color='var(--green)';msg.textContent='✅ Data restored successfully!';}
+      renderPage('dashboard');
+    }catch(err){
+      if(msg){msg.style.color='var(--red)';msg.textContent='❌ Import failed: '+err.message;}
+      e.target.value='';
+    }
+  };
+  r.readAsText(f);
+}
+function resetAll(){
+  if(!confirm('Reset ALL data to factory defaults?'))return;
+  S=clone(DEFAULTS);save();renderPage('dashboard');
+}
+
+// ═══════════════════════════════════════════════════════════
+// LIVE PRICE FETCHING
+// ═══════════════════════════════════════════════════════════
+function setStatus(msg){document.getElementById('refresh-status').textContent=msg;}
+
+// Visible debug log — stored in S.refreshLog, shown in Settings
+let _log=[];
+function rlog(msg){
+  _log.push(new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})+' '+msg);
+  console.log('[WT]',msg);
+}
+
+async function doRefresh(){
+  const btn=document.getElementById('btn-refresh');
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span> Fetching…';
+  _log=[];
+  const ok=[],fail=[];
+
+  setStatus('Rates…');
+  try{await fetchRates();ok.push('rates');}catch(e){fail.push('rates');rlog('❌ rates: '+e.message);}
+
+  setStatus('Crypto…');
+  try{await fetchCrypto();ok.push('crypto');}catch(e){fail.push('crypto');rlog('❌ crypto: '+e.message);}
+
+  setStatus('Stocks…');
+  try{await fetchAllStocks();ok.push('stocks');}catch(e){fail.push('stocks');rlog('❌ stocks: '+e.message);}
+
+  setStatus('ARS stocks…');
+  try{await fetchBrubankStocks();ok.push('ars-stocks');}catch(e){rlog('⚠ ARS stocks: '+e.message);}
+
+  setStatus('Gold…');
+  try{await fetchGoldPrice();ok.push('gold');}catch(e){fail.push('gold');rlog('❌ gold: '+e.message);}
+
+  S.lastRefresh=new Date().toISOString();
+  S.refreshLog=[..._log];
+  save();
+  btn.disabled=false;btn.textContent='⟳ Refresh Prices';
+  const t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  if(fail.length===0) setStatus('✓ All updated at '+t);
+  else if(ok.length===0) setStatus('✗ All failed — check Settings > Debug Log');
+  else setStatus(`${t} ✓ ${ok.join(',')} ✗ ${fail.join(',')}`);
+  renderPage(document.querySelector('.page.active')?.id?.replace('page-','')||'dashboard');
+}
+
+// ── Timeout ────────────────────────────────────────────────
+function timed(ms){return new Promise((_,r)=>setTimeout(()=>r(new Error('timeout '+ms+'ms')),ms));}
+
+// ── fetchJSON: 6 methods tried in order ───────────────────
+// 'direct' is FIRST so CORS-friendly APIs (Binance, Frankfurter,
+// CoinCap) succeed immediately without hitting proxies.
+// For non-CORS APIs (Yahoo Finance) direct fails fast and we
+// fall through to the proxy cascade.
+async function fetchJSON(url, label){
+  const tag=label||new URL(url).hostname;
+  const enc=encodeURIComponent(url);
+  const methods=[
+    // 1. direct — works for CORS-friendly APIs (Binance, Frankfurter, CoinCap, CoinGecko)
+    ['direct', async()=>{
+      const r=await Promise.race([fetch(url,{mode:'cors'}),timed(8000)]);
+      if(!r.ok)throw new Error(r.status);
+      return r.json();
+    }],
+    // 2. allorigins /raw  — returns the body directly (no JSON.parse of wrapper)
+    ['allorigins/raw', async()=>{
+      const r=await Promise.race([fetch('https://api.allorigins.win/raw?url='+enc),timed(12000)]);
+      if(!r.ok)throw new Error(r.status);
+      return r.json();
+    }],
+    // 3. allorigins /get  — wraps body: {contents:"..."}
+    ['allorigins/get', async()=>{
+      const r=await Promise.race([fetch('https://api.allorigins.win/get?url='+enc),timed(12000)]);
+      if(!r.ok)throw new Error(r.status);
+      const w=await r.json();
+      if(!w||!w.contents)throw new Error('empty');
+      return JSON.parse(w.contents);
+    }],
+    // 4. corsproxy.io (two URL formats)
+    ['corsproxy.io', async()=>{
+      const r=await Promise.race([fetch('https://corsproxy.io/?url='+enc),timed(12000)]);
+      if(!r.ok)throw new Error(r.status);
+      return r.json();
+    }],
+    // 5. codetabs proxy
+    ['codetabs', async()=>{
+      const r=await Promise.race([fetch('https://api.codetabs.com/v1/proxy/?quest='+enc),timed(12000)]);
+      if(!r.ok)throw new Error(r.status);
+      return r.json();
+    }],
+    // 6. thingproxy fallback
+    ['thingproxy', async()=>{
+      const r=await Promise.race([fetch('https://thingproxy.freeboard.io/fetch/'+url),timed(12000)]);
+      if(!r.ok)throw new Error(r.status);
+      return r.json();
+    }]
+  ];
+  for(const[name,fn]of methods){
+    try{
+      const d=await fn();
+      if(d!=null){rlog(`✅ ${tag} via ${name}`);return d;}
+      rlog(`  ⚠ ${tag} ${name}: empty response`);
+    }catch(e){rlog(`  ⚠ ${tag} ${name}: ${String(e.message).slice(0,60)}`);}
+  }
+  throw new Error('All 6 methods failed for '+tag);
+}
+
+// ── Exchange rates ─────────────────────────────────────────
+function applyFrankfurterRates(d){
+  if(!d||!d.rates)return false;
+  if(d.rates.EUR)S.rates.eurUsd=+(1/d.rates.EUR).toFixed(5);
+  if(d.rates.CZK&&d.rates.EUR)S.rates.eurCzk=+(d.rates.CZK/d.rates.EUR).toFixed(3);
+  if(d.rates.GBP&&d.rates.EUR)S.rates.eurGbp=+(d.rates.GBP/d.rates.EUR).toFixed(4);
+  if(d.rates.CHF&&d.rates.EUR)S.rates.eurChf=+(d.rates.CHF/d.rates.EUR).toFixed(4);
+  if(d.rates.PLN&&d.rates.EUR)S.rates.eurPln=+(d.rates.PLN/d.rates.EUR).toFixed(3);
+  return true;
+}
+async function fetchRates(){
+  // Frankfurter.app — ECB data, native CORS, no key needed.
+  // Try the three most reliable access paths in parallel, take first winner.
+  const frankUrl='https://api.frankfurter.app/latest?from=USD';
+  let d=null;
+  // Fast parallel attempt: direct + allorigins
+  const winner = await Promise.any([
+    fetch(frankUrl,{mode:'cors'}).then(r=>r.ok?r.json():Promise.reject(r.status)),
+    fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(frankUrl)).then(r=>r.ok?r.json():Promise.reject(r.status)),
+    new Promise((_,r)=>setTimeout(()=>r('timeout'),7000))
+  ]).catch(()=>null);
+  if(winner&&winner.rates){
+    applyFrankfurterRates(winner);
+    rlog('✅ rates (Frankfurter)');
+    return;
+  }
+  // Sequential fallback through full proxy chain
+  try{
+    d=await fetchJSON(frankUrl,'rates-frank');
+    if(applyFrankfurterRates(d)){rlog('✅ rates (Frankfurter via proxy)');return;}
+  }catch(e){rlog('  ⚠ Frankfurter all proxies failed, trying exchangerate-api');}
+  // Final backup: exchangerate-api (also has ARS)
+  d=await fetchJSON('https://api.exchangerate-api.com/v4/latest/USD','rates-backup');
+  if(d&&d.rates){
+    if(d.rates.EUR)S.rates.eurUsd=+(1/d.rates.EUR).toFixed(5);
+    if(d.rates.CZK&&d.rates.EUR)S.rates.eurCzk=+(d.rates.CZK/d.rates.EUR).toFixed(3);
+    if(d.rates.GBP&&d.rates.EUR)S.rates.eurGbp=+(d.rates.GBP/d.rates.EUR).toFixed(4);
+    if(d.rates.CHF&&d.rates.EUR)S.rates.eurChf=+(d.rates.CHF/d.rates.EUR).toFixed(4);
+    if(d.rates.PLN&&d.rates.EUR)S.rates.eurPln=+(d.rates.PLN/d.rates.EUR).toFixed(3);
+    if(d.rates.ARS)S.rates.usdArs=Math.round(d.rates.ARS);
+    rlog('✅ rates (exchangerate-api)');
+  }
+}
+
+// ── Crypto prices ──────────────────────────────────────────
+const BINANCE_MAP={bitcoin:'BTC',ethereum:'ETH',dogecoin:'DOGE',cardano:'ADA',
+  polkadot:'DOT',solana:'SOL',ripple:'XRP',tether:'USDT','binancecoin':'BNB',
+  'shiba-inu':'SHIB','avalanche-2':'AVAX','matic-network':'MATIC'};
+const COINCAP_MAP={bitcoin:'bitcoin',ethereum:'ethereum',dogecoin:'dogecoin',cardano:'cardano',
+  polkadot:'polkadot','usd-coin':'usd-coin',solana:'solana',ripple:'xrp',
+  tether:'tether','binancecoin':'binancecoin'};
+
+async function fetchCrypto(){
+  const ids=new Set();
+  ['kraken','exodus','whitebit'].forEach(a=>(S.accounts[a]||[]).forEach(p=>{if(p.cgId)ids.add(p.cgId);}));
+  if(!ids.size)return;
+  const idStr=[...ids].join(',');
+  let gotAny=false;
+  const now=Date.now();
+
+  // ── Source 1: Binance (native CORS — most reliable from file://) ──
+  // Try direct fetch first (no proxy) since Binance supports CORS.
+  try{
+    const binIds=[...ids].filter(id=>BINANCE_MAP[id]);
+    if(binIds.length){
+      const binSyms=binIds.map(id=>'"'+BINANCE_MAP[id]+'USDT"');
+      const binUrl='https://api.binance.com/api/v3/ticker/price?symbols=['+binSyms.join(',')+']';
+      // Try direct first (CORS-friendly), then proxy chain
+      let d=null;
+      try{
+        const r=await Promise.race([fetch(binUrl,{mode:'cors'}),timed(7000)]);
+        if(r.ok)d=await r.json();
+      }catch(e2){rlog('  ⚠ Binance direct: '+e2.message.slice(0,50));}
+      if(!d)d=await fetchJSON(binUrl,'binance').catch(()=>null);
+      if(Array.isArray(d)){
+        let n=0;
+        d.forEach(item=>{
+          const sym=item.symbol.replace(/USDT$/,'');
+          const usd=parseFloat(item.price);
+          if(usd>0){
+            const cgId=Object.keys(BINANCE_MAP).find(k=>BINANCE_MAP[k]===sym);
+            if(cgId){S.prices[cgId]={usd,eur:usd/S.rates.eurUsd,ts:now};n++;}
+          }
+        });
+        if(n>0){rlog(`✅ Binance: ${n} coins`);gotAny=true;}
+      }
+    }
+  }catch(e){rlog('⚠ Binance: '+e.message.slice(0,80));}
+
+  // ── Source 2: CoinCap (native CORS) ──
+  const needMore=[...ids].filter(id=>!S.prices[id]?.ts||S.prices[id].ts<now-120000);
+  if(needMore.length>0){
+    try{
+      const capIds=needMore.map(id=>COINCAP_MAP[id]||id).join(',');
+      const capUrl=`https://api.coincap.io/v2/assets?ids=${capIds}`;
+      let d=null;
+      try{
+        const r=await Promise.race([fetch(capUrl,{mode:'cors'}),timed(7000)]);
+        if(r.ok)d=await r.json();
+      }catch(e2){}
+      if(!d)d=await fetchJSON(capUrl,'coincap').catch(()=>null);
+      if(d&&d.data){
+        let n=0;
+        d.data.forEach(coin=>{
+          const usd=parseFloat(coin.priceUsd);
+          if(usd>0){
+            const orig=[...ids].find(id=>id===coin.id||COINCAP_MAP[id]===coin.id);
+            if(orig&&!S.prices[orig]?.ts){S.prices[orig]={usd,eur:usd/S.rates.eurUsd,ts:now};n++;}
+          }
+        });
+        if(n>0){rlog(`✅ CoinCap: ${n} coins`);gotAny=true;}
+      }
+    }catch(e){rlog('⚠ CoinCap: '+e.message.slice(0,80));}
+  }
+
+  // ── Source 3: CoinGecko (via proxy, rate-limited but most complete) ──
+  const stillMissing=[...ids].filter(id=>!S.prices[id]?.ts&&id!=='usd-coin'&&id!=='tether');
+  if(stillMissing.length>0){
+    try{
+      const url=`https://api.coingecko.com/api/v3/simple/price?ids=${stillMissing.join(',')}&vs_currencies=usd,eur&precision=8`;
+      const d=await fetchJSON(url,'coingecko');
+      if(d&&typeof d==='object'&&!d.status){
+        let n=0;
+        Object.entries(d).forEach(([id,p])=>{if(p&&p.usd>0){S.prices[id]={usd:p.usd,eur:p.eur||(p.usd/S.rates.eurUsd),ts:now};n++;}});
+        if(n>0){rlog(`✅ CoinGecko: ${n} coins`);gotAny=true;}
+      }
+    }catch(e){rlog('⚠ CoinGecko: '+e.message.slice(0,80));}
+  }
+
+  // USDC / stablecoins — always $1 as last resort
+  if(ids.has('usd-coin')&&!S.prices['usd-coin']?.ts){S.prices['usd-coin']={usd:1,eur:1/S.rates.eurUsd,ts:now};gotAny=true;}
+  if(ids.has('tether')&&!S.prices['tether']?.ts){S.prices['tether']={usd:1,eur:1/S.rates.eurUsd,ts:now};gotAny=true;}
+
+  if(!gotAny)throw new Error('No crypto source responded');
+}
+
+// ── Stock prices (USD-priced: eToro, IBRK) ─────────────────
+async function fetchAllStocks(){
+  const syms=new Set();
+  ['etoro','ibrk'].forEach(a=>(S.accounts[a]||[]).forEach(p=>{
+    if(p.type!=='cash'&&p.symbol&&!p.symbol.includes('NVTK'))syms.add(p.symbol);
+  }));
+  const arr=[...syms];
+  let fetched=0;
+  for(let i=0;i<arr.length;i+=3){
+    await Promise.allSettled(arr.slice(i,i+3).map(async sym=>{
+      const price=await fetchYahoo(sym);
+      if(price){S.prices[sym]={usd:price,eur:price/S.rates.eurUsd,ts:Date.now()};fetched++;}
+      else rlog('⚠ No price for '+sym);
+    }));
+  }
+  if(fetched>0)rlog(`✅ Stocks (USD): ${fetched}/${arr.length} symbols`);
+}
+// ── ARS stock prices (Brubank: YPFD.BA, GGAL.BA, etc.) ─────
+// Yahoo returns price in ARS for .BA tickers
+async function fetchBrubankStocks(){
+  const syms=new Set();
+  (S.accounts.brubank||[]).forEach(p=>{if(p.type==='stock_ars_live'&&p.symbol)syms.add(p.symbol);});
+  if(!syms.size)return;
+  let fetched=0;
+  for(const sym of syms){
+    const price=await fetchYahoo(sym);
+    if(price&&price>0){
+      S.prices[sym]={ars:price,usd:price/S.rates.usdArs,eur:price/S.rates.usdArs/S.rates.eurUsd,ts:Date.now()};
+      fetched++;rlog(`✅ ${sym}: ARS ${price.toFixed(2)}`);
+    }else rlog('⚠ No ARS price for '+sym);
+  }
+  if(fetched>0)rlog(`✅ ARS stocks: ${fetched}/${syms.size}`);
+}
+
+async function fetchYahoo(sym){
+  // Yahoo Finance v8 chart endpoint (no native CORS — needs proxies)
+  const e=encodeURIComponent(sym);
+  const urls=[
+    `https://query1.finance.yahoo.com/v8/finance/chart/${e}?interval=1d&range=1d`,
+    `https://query2.finance.yahoo.com/v8/finance/chart/${e}?interval=1d&range=1d`
+  ];
+  const xp=d=>d?.chart?.result?.[0]?.meta?.regularMarketPrice??null;
+  const proxies=[
+    u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
+    u=>'https://api.allorigins.win/get?url='+encodeURIComponent(u),
+    u=>'https://corsproxy.io/?url='+encodeURIComponent(u),
+    u=>'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(u),
+    u=>'https://thingproxy.freeboard.io/fetch/'+u,
+  ];
+  for(const yUrl of urls){
+    for(const mkProxy of proxies){
+      try{
+        const proxyUrl=mkProxy(yUrl);
+        const r=await Promise.race([fetch(proxyUrl),timed(10000)]);
+        if(!r.ok)continue;
+        let d;
+        if(proxyUrl.includes('allorigins.win/get')){
+          const w=await r.json();
+          if(!w?.contents)continue;
+          d=JSON.parse(w.contents);
+        }else{d=await r.json();}
+        const p=xp(d);if(p&&p>0){rlog(`✅ ${sym} via proxy`);return p;}
+      }catch(e2){}
+    }
+    // direct as last resort (works in some browser configs)
+    try{const r=await Promise.race([fetch(yUrl),timed(6000)]);if(r.ok){const d=await r.json();const p=xp(d);if(p&&p>0)return p;}}catch(e2){}
+  }
+  return null;
+}
+
+// ── Gold price ─────────────────────────────────────────────
+async function fetchGoldPrice(){
+  // Try metals.live FIRST — has native CORS, very reliable
+  try{
+    let d=null;
+    try{
+      const r=await Promise.race([fetch('https://api.metals.live/v1/spot/gold',{mode:'cors'}),timed(7000)]);
+      if(r.ok)d=await r.json();
+    }catch(e2){}
+    if(!d)d=await fetchJSON('https://api.metals.live/v1/spot/gold','gold').catch(()=>null);
+    const p=Array.isArray(d)?d[0]?.price:d?.price;
+    if(p&&p>0){
+      S.prices['GC=F']=S.prices['XAU']={usd:p,eur:p/S.rates.eurUsd,ts:Date.now()};
+      rlog('✅ Gold via metals.live: $'+p.toFixed(2));return;
+    }
+  }catch(e){rlog('⚠ Gold metals.live: '+e.message);}
+  // GC=F (gold futures) via Yahoo Finance
+  const price=await fetchYahoo('GC=F');
+  if(price&&price>0){
+    S.prices['GC=F']=S.prices['XAU']={usd:price,eur:price/S.rates.eurUsd,ts:Date.now()};
+    rlog('✅ Gold via Yahoo GC=F: $'+price.toFixed(2));return;
+  }
+  rlog('⚠ Gold: all sources failed');
+}
+
+// ═══════════════════════════════════════════════════════════
+// DOCTA BUSINESS
+// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// CONTRACTOR PORTAL
+// ═══════════════════════════════════════════════════════════
+let _contModalKey=null;
+function openContractorEdit(key){
+  _contModalKey=key;
+  const md=bizMonthData(key);
+  const b=bizCalc(key);
+  document.getElementById('cont-m-title').textContent='✏️ '+bizMonthLabel(key);
+  document.getElementById('cont-m-body').innerHTML=`
+    <p class="hint" style="margin-bottom:14px">Rate: €${S.biz.contractor.costRateEUR}/hr · ${S.biz.contractor.hoursPerDay}h/day</p>
+    <div class="frow">
+      <div class="fg"><label>Forecast Days <span class="hint" style="text-transform:none;letter-spacing:0">days you plan to work this month</span></label>
+        <input id="cm-fdays" type="number" step="0.5" min="0" value="${md.contractor.forecastDays}"></div>
+      <div class="fg"><label>Actual Days Worked <span class="hint" style="text-transform:none;letter-spacing:0">fill at month end; auto-adjusts next invoice</span></label>
+        <input id="cm-adays" type="number" step="0.5" min="0" value="${md.contractor.actualDays??''}" placeholder="leave blank if not finished yet"></div>
+    </div>
+    <div class="fg"><label>Business Card Expenses (EUR) <span class="hint" style="text-transform:none;letter-spacing:0">total you spent on company card this month — deducted from next invoice</span></label>
+      <input id="cm-card" type="number" step="0.01" min="0" value="${md.contractor.cardExpenses||0}"></div>
+    <div class="fg"><label>Note</label><input id="cm-note" value="${md.contractor.note||''}"></div>`;
+  document.getElementById('cont-modal-ov').classList.add('open');
+}
+function closeContModal(){ document.getElementById('cont-modal-ov').classList.remove('open'); }
+function saveContModal(){
+  const key=_contModalKey; if(!key)return;
+  const md=bizMonthData(key);
+  const VN=id=>parseFloat(document.getElementById(id)?.value)||0;
+  md.contractor.forecastDays=VN('cm-fdays');
+  const aRaw=document.getElementById('cm-adays')?.value;
+  md.contractor.actualDays=(aRaw&&aRaw.trim()!=='')?parseFloat(aRaw):null;
+  md.contractor.cardExpenses=VN('cm-card');
+  md.contractor.note=document.getElementById('cm-note')?.value||'';
+  save(); closeContModal(); renderContractor();
+}
+
+function renderContractor(){
+  const c=S.biz.contractor;
+  const curKey=bizMonthKey();
+  const allKeys=Object.keys(S.biz.months||{}).sort();
+  if(!allKeys.includes(curKey)) bizMonthData(curKey); // ensure current month exists
+
+  // Compute calcs for all months
+  const months=allKeys.map(key=>({key,b:bizCalc(key)}));
+
+  // YTD (current year)
+  const yr=curKey.slice(0,4);
+  const ytd=months.filter(m=>m.key.startsWith(yr));
+  const ytdClosed=ytd.filter(m=>m.b.isClosed);
+  const ytdDays=ytdClosed.reduce((s,m)=>s+m.b.actualDays,0);
+  const ytdInvoiced=ytdClosed.reduce((s,m)=>s+m.b.invoiceForecast,0);
+  const ytdCard=ytd.reduce((s,m)=>s+m.b.thisCardExpenses,0);
+  const allClosed=months.filter(m=>m.b.isClosed);
+  const totalInvoiced=allClosed.reduce((s,m)=>s+m.b.invoiceForecast,0);
+
+  // Update name + preview badge
+  document.getElementById('cont-page-name').textContent=c.name||'Contractor';
+  document.getElementById('cont-preview-badge').style.display=_contPreview?'inline':'none';
+  const exitBtn=document.getElementById('cont-exit-btn');
+  if(exitBtn){exitBtn.textContent=_contPreview?'← Back to Dashboard':'🔒 Sign Out';}
+
+  // Current month highlight box
+  const curb=bizCalc(curKey);
+  const curbLabel=bizMonthLabel(curKey);
+  document.getElementById('cont-current-box').innerHTML=`
+    <div><div class="cib-label">📄 ${curbLabel} Invoice</div>
+      <div class="cib-val" style="color:var(--orange)">${fm(curb.invoiceForecast)}</div>
+      <div class="cib-sub">${curb.isClosed?'✅ Closed':'Forecast issued on day 1'}</div></div>
+    <div><div class="cib-label">📅 Days This Month</div>
+      <div class="cib-val">${curb.isClosed?curb.actualDays:curb.billedDays}</div>
+      <div class="cib-sub">${curb.isClosed?'actual':'forecast+adj'}${curb.adjustDays!==0?` (${curb.adjustDays>0?'+':''}${curb.adjustDays} adj)`:''}</div></div>
+    <div><div class="cib-label">💳 Card Expenses (this month)</div>
+      <div class="cib-val">${fm(curb.thisCardExpenses)}</div>
+      <div class="cib-sub">deducted from next invoice</div></div>`;
+
+  // Summary cards
+  document.getElementById('cont-cards').innerHTML=`
+    <div class="card"><div class="cl">${yr} Invoiced</div><div class="cv pos">${fm(ytdInvoiced)}</div><div class="cs">${ytdClosed.length} months closed</div></div>
+    <div class="card"><div class="cl">${yr} Days Worked</div><div class="cv">${ytdDays}</div><div class="cs">actual days, closed months</div></div>
+    <div class="card"><div class="cl">${yr} Card Expenses</div><div class="cv neg">${fm(ytdCard)}</div><div class="cs">business card total</div></div>
+    <div class="card"><div class="cl">All-Time Invoiced</div><div class="cv pos">${fm(totalInvoiced)}</div><div class="cs">${allClosed.length} months total</div></div>`;
+
+  // Monthly table (most recent first)
+  const rows=[...months].reverse().map(({key,b})=>{
+    const isCur=key===curKey;
+    const adjSign=b.adjustDays>0?'+':'';
+    const adjCell=b.adjustDays!==0
+      ?`<span style="color:${b.adjustDays>0?'var(--green)':'var(--red)'};font-size:11px">${adjSign}${b.adjustDays}d</span>`:'—';
+    const statusBadge=b.isClosed
+      ?`<span class="cont-badge closed">✅ Closed</span>`
+      :isCur?`<span class="cont-badge current">⏳ Current</span>`
+      :`<span class="cont-badge open">📋 Open</span>`;
+    return `<tr class="cont-month-row${isCur?' cont-current-row':''}">
+      <td style="font-weight:${isCur?700:400}">${bizMonthLabel(key)}</td>
+      <td>${b.md.contractor.forecastDays}d</td>
+      <td>${b.actualDays!=null?b.actualDays+'d':'—'}</td>
+      <td style="font-size:11px">${adjCell}</td>
+      <td>${fm(b.thisCardExpenses)}</td>
+      <td style="color:var(--orange);font-weight:600">${fm(b.invoiceForecast)}</td>
+      <td>${statusBadge}</td>
+      <td><button class="btn-s" style="padding:3px 9px" onclick="openContractorEdit('${key}')">✏️ Edit</button></td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="8" class="empty-st">No months data yet.</td></tr>';
+  document.getElementById('cont-tbody').innerHTML=rows;
+  renderInvoices();
+}
+
+// ── Invoice functions ──────────────────────────────────────────
+let _invModal={editId:null};
+let _invPhotoData=null;
+
+async function compressImage(file){
+  return new Promise((resolve)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const MAX=900;
+        let w=img.width,h=img.height;
+        if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
+        const canvas=document.createElement('canvas');
+        canvas.width=w;canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg',0.75));
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleInvoicePhoto(event){
+  const file=event.target.files[0];
+  if(!file)return;
+  const data=await compressImage(file);
+  _invPhotoData=data;
+  document.getElementById('inv-photo-img').src=data;
+  document.getElementById('inv-photo-preview').style.display='block';
+  document.getElementById('inv-photo-empty').style.display='none';
+}
+
+function openInvoiceModal(editId){
+  _invModal.editId=editId||null;
+  _invPhotoData=null;
+  // Reset form
+  const today=new Date();
+  document.getElementById('inv-date').value=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  document.getElementById('inv-company').value='';
+  document.getElementById('inv-type').value='invoice';
+  document.getElementById('inv-amount').value='';
+  document.getElementById('inv-currency').value='EUR';
+  document.getElementById('inv-note').value='';
+  document.getElementById('inv-photo-img').src='';
+  document.getElementById('inv-photo-preview').style.display='none';
+  document.getElementById('inv-photo-empty').style.display='block';
+  document.getElementById('inv-photo-input').value='';
+  document.getElementById('inv-m-title').textContent='🧾 Add Expense';
+  if(editId){
+    const inv=(S.biz.invoices||[]).find(i=>i.id===editId);
+    if(inv){
+      document.getElementById('inv-m-title').textContent='🧾 Edit Expense';
+      document.getElementById('inv-date').value=inv.date||'';
+      document.getElementById('inv-company').value=inv.company||'';
+      document.getElementById('inv-type').value=inv.type||'invoice';
+      document.getElementById('inv-amount').value=inv.amount||'';
+      document.getElementById('inv-currency').value=inv.currency||'EUR';
+      document.getElementById('inv-note').value=inv.note||'';
+      if(inv.photo){
+        _invPhotoData=inv.photo;
+        document.getElementById('inv-photo-img').src=inv.photo;
+        document.getElementById('inv-photo-preview').style.display='block';
+        document.getElementById('inv-photo-empty').style.display='none';
+      }
+    }
+  }
+  document.getElementById('inv-modal-ov').style.display='flex';
+}
+
+function closeInvoiceModal(){
+  document.getElementById('inv-modal-ov').style.display='none';
+}
+
+function saveInvoiceModal(){
+  const date=document.getElementById('inv-date').value;
+  const company=document.getElementById('inv-company').value.trim();
+  const type=document.getElementById('inv-type').value;
+  const amount=parseFloat(document.getElementById('inv-amount').value)||0;
+  const currency=document.getElementById('inv-currency').value;
+  const note=document.getElementById('inv-note').value.trim();
+  if(!date||!amount){alert('Please fill in date and amount.');return;}
+  if(!S.biz.invoices)S.biz.invoices=[];
+  if(_invModal.editId){
+    const idx=S.biz.invoices.findIndex(i=>i.id===_invModal.editId);
+    if(idx>=0){
+      S.biz.invoices[idx]={...S.biz.invoices[idx],date,company,type,amount,currency,note,photo:_invPhotoData||S.biz.invoices[idx].photo||null};
+    }
+  }else{
+    S.biz.invoices.push({id:'inv_'+Date.now(),date,company,type,amount,currency,note,photo:_invPhotoData||null,createdAt:new Date().toISOString()});
+  }
+  save();
+  closeInvoiceModal();
+  renderInvoices();
+}
+
+function deleteInvoice(id){
+  if(!confirm('Delete this invoice?'))return;
+  S.biz.invoices=(S.biz.invoices||[]).filter(i=>i.id!==id);
+  save();
+  renderInvoices();
+}
+
+function renderInvoices(){
+  if(!S.biz.invoices)S.biz.invoices=[];
+  const invs=S.biz.invoices;
+  const typeLabel={invoice:'📄 Invoice',expense:'🧾 Expense',travel:'✈️ Travel',purchase:'🛒 Purchase',other:'📋 Other'};
+  // Summary cards
+  const totalAmt=invs.reduce((s,i)=>{
+    if(i.currency==='EUR')return s+i.amount;
+    return s+i.amount; // simplified; all treated as EUR for summary
+  },0);
+  const byType={};invs.forEach(i=>{byType[i.type]=(byType[i.type]||0)+1;});
+  const topType=Object.entries(byType).sort((a,b)=>b[1]-a[1])[0];
+  const thisMonth=new Date().toISOString().slice(0,7);
+  const thisMonthInvs=invs.filter(i=>i.date&&i.date.startsWith(thisMonth));
+  const thisMonthAmt=thisMonthInvs.reduce((s,i)=>s+i.amount,0);
+  document.getElementById('inv-summary-cards').innerHTML=`
+    <div class="card"><div class="cl">Total Invoices</div><div class="cv">${invs.length}</div><div class="cs">all time</div></div>
+    <div class="card"><div class="cl">Total Amount</div><div class="cv pos">${fm(totalAmt)}</div><div class="cs">all entries</div></div>
+    <div class="card"><div class="cl">This Month</div><div class="cv">${thisMonthInvs.length} entries</div><div class="cs">${fm(thisMonthAmt)}</div></div>
+    ${topType?`<div class="card"><div class="cl">Top Category</div><div class="cv">${typeLabel[topType[0]]||topType[0]}</div><div class="cs">${topType[1]} entries</div></div>`:''}`;
+  // Cards grid (newest first)
+  const sorted=[...invs].sort((a,b)=>b.date>a.date?1:-1);
+  if(!sorted.length){
+    document.getElementById('inv-grid').innerHTML='<div style="color:var(--muted);text-align:center;padding:24px 0;grid-column:1/-1">No expenses yet. Tap "+ Add Expense" to get started.</div>';
+    return;
+  }
+  document.getElementById('inv-grid').innerHTML=sorted.map(inv=>`
+    <div class="inv-card">
+      ${inv.photo
+        ?`<img class="inv-card-photo" src="${inv.photo}" onclick="document.getElementById('inv-lightbox-img').src=this.src;document.getElementById('inv-lightbox').style.display='flex'" alt="invoice photo">`
+        :`<div class="inv-card-photo-placeholder" onclick="openInvoiceModal('${inv.id}')">📄</div>`}
+      <div style="padding:10px 12px;flex:1;display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+          <span style="font-weight:700;font-size:15px;color:var(--green)">${fm(inv.amount,inv.currency)}</span>
+          <span style="font-size:11px;background:var(--surface3);padding:2px 7px;border-radius:10px;color:var(--muted)">${typeLabel[inv.type]||inv.type}</span>
+        </div>
+        <div style="font-weight:600;color:var(--text);font-size:13px">${inv.company||'—'}</div>
+        <div style="color:var(--muted);font-size:12px">${inv.date||''}</div>
+        ${inv.note?`<div style="color:var(--muted);font-size:12px;font-style:italic">${inv.note}</div>`:''}
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button class="btn-s" style="padding:3px 10px" onclick="openInvoiceModal('${inv.id}')">✏️ Edit</button>
+          <button class="btn-s" style="padding:3px 10px;color:var(--red);border-color:rgba(248,81,73,.4)" onclick="deleteInvoice('${inv.id}')">🗑️</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ── End invoice functions ──────────────────────────────────────
+
+let _bizMonth = null; // 'YYYY-MM'
+function bizMonthKey(){ if(_bizMonth) return _bizMonth; const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`; }
+function bizMonthLabel(key){
+  const [y,m]=key.split('-');
+  return new Date(+y,+m-1,1).toLocaleString('en',{month:'long',year:'numeric'});
+}
+function bizPrevMonth(){ const [y,m]=bizMonthKey().split('-'); _bizMonth=new Date(Date.UTC(+y,+m-2,1)).toISOString().slice(0,7); renderBiz(); }
+function bizNextMonth(){ const [y,m]=bizMonthKey().split('-'); _bizMonth=new Date(Date.UTC(+y,+m,1)).toISOString().slice(0,7); renderBiz(); }
+function bizPrevMonthKey(key){ const [y,m]=key.split('-'); return new Date(Date.UTC(+y,+m-2,1)).toISOString().slice(0,7); }
+
+function bizMonthData(key){
+  if(!S.biz.months[key]) S.biz.months[key]={contractor:{forecastDays:0,actualDays:null,cardExpenses:0,note:''},variableCosts:[]};
+  return S.biz.months[key];
+}
+
+function bizCalc(key){
+  const c=S.biz.contractor;
+  const md=bizMonthData(key);
+  const prev=S.biz.months[bizPrevMonthKey(key)];
+  // Adjustment from previous month (actual - forecast days)
+  const prevForecast=prev?.contractor?.forecastDays||0;
+  const prevActual=prev?.contractor?.actualDays;
+  const adjustDays=(prevActual!=null)?(prevActual-prevForecast):0;
+  // Forecast invoice uses PREVIOUS month's card expenses (Gabriel invoices on day 1 with settled prev expenses)
+  const prevCardExpenses=prev?.contractor?.cardExpenses||0;
+  // Current month card expenses (will be deducted from NEXT month's invoice)
+  const thisCardExpenses=md.contractor.cardExpenses||0;
+  // Billed days = forecast + previous month day adjustment
+  const billedDays=md.contractor.forecastDays+adjustDays;
+  const billedHours=billedDays*c.hoursPerDay;
+  const grossContractor=billedHours*c.costRateEUR;
+  // Forecast invoice (issued at start of month, deducts prev month card expenses)
+  const invoiceForecast=grossContractor-prevCardExpenses;
+  // Month is closed once actual days are entered; invoice is always the forecast amount
+  const isClosed=md.contractor.actualDays!=null;
+  const actualDays=isClosed?md.contractor.actualDays:null;
+  // invoiceActual = invoiceForecast (Gabriel always invoices the forecast)
+  const invoiceActual=isClosed?invoiceForecast:null;
+  // For P&L: use forecast-based gross (since that's what we pay)
+  const pnlHours=billedHours;
+  const pnlGross=grossContractor;
+  const revenue=pnlHours*c.sellRateEUR;
+  const laborMargin=pnlHours*(c.sellRateEUR-c.costRateEUR);
+  // Fixed costs (active only)
+  const fixedTotal=(S.biz.fixedCosts||[]).filter(f=>f.active).reduce((s,f)=>s+f.amountEUR,0);
+  // Variable costs for this month
+  const varTotal=(md.variableCosts||[]).reduce((s,v)=>s+v.amountEUR,0);
+  const totalCosts=pnlGross+fixedTotal+varTotal;
+  const netPnl=revenue-totalCosts;
+  return{c,md,adjustDays,billedDays,billedHours,grossContractor,prevCardExpenses,thisCardExpenses,
+    invoiceForecast,invoiceActual,isClosed,actualDays,
+    pnlHours,pnlGross,revenue,laborMargin,fixedTotal,varTotal,totalCosts,netPnl};
+}
+
+function renderBiz(){
+  const key=bizMonthKey();
+  document.getElementById('biz-month-label').textContent=bizMonthLabel(key);
+  const b=bizCalc(key);
+  const fc=b.c; // contractor config
+
+  // ── Summary cards
+  document.getElementById('biz-cards').innerHTML=`
+    <div class="card"><div class="cl">Revenue</div><div class="cv pos">${fm(b.revenue)}</div><div class="cs">${b.pnlHours}h${b.isClosed?'':' forecast'}</div></div>
+    <div class="card"><div class="cl">Contractor Cost</div><div class="cv neg">${fm(b.pnlGross)}</div><div class="cs">Invoice ${fm(b.invoiceForecast)}</div></div>
+    <div class="card"><div class="cl">Fixed Costs</div><div class="cv neg">${fm(b.fixedTotal)}</div><div class="cs">monthly recurring</div></div>
+    <div class="card"><div class="cl">Variable Costs</div><div class="cv neg">${fm(b.varTotal)}</div><div class="cs">this month</div></div>
+    <div class="card"><div class="cl">Net P&amp;L</div><div class="cv ${b.netPnl>=0?'pos':'neg'}">${fm(b.netPnl)}</div><div class="cs">${b.isClosed?'confirmed':'⚠ forecast'}</div></div>
+    <div class="card"><div class="cl">Labor Margin</div><div class="cv pos">${fm(b.laborMargin)}</div><div class="cs">€${(fc.sellRateEUR-fc.costRateEUR).toFixed(2)}/hr × ${b.pnlHours}h</div></div>`;
+
+  // ── Contractor panel
+  const md=b.md;
+  const adjSign=b.adjustDays>0?'+':'';
+  const nextAdj=b.isClosed?(b.actualDays-md.contractor.forecastDays):null;
+  document.getElementById('biz-contractor').innerHTML=`
+    <table style="width:100%;border-collapse:collapse">
+      <tr><td style="padding:4px 0;color:var(--muted);font-size:12px">Cost / Sell rate</td><td style="text-align:right;font-size:12px">€${fc.costRateEUR} / €${fc.sellRateEUR} per hr</td></tr>
+      <tr><td colspan="2"><hr style="border-color:var(--border);margin:6px 0"></td></tr>
+      <tr><td style="padding:4px 0;color:var(--muted);font-size:12px">Forecast days</td><td style="text-align:right"><strong>${md.contractor.forecastDays}</strong></td></tr>
+      ${b.adjustDays!==0?`<tr><td style="padding:4px 0;color:var(--muted);font-size:12px">Adj. from prev month</td><td style="text-align:right;${b.adjustDays>0?'color:var(--green)':'color:var(--red)'}">${adjSign}${b.adjustDays} days (${adjSign}${fm(Math.abs(b.adjustDays)*fc.hoursPerDay*fc.costRateEUR)})</td></tr>`:''}
+      <tr><td style="padding:4px 0;color:var(--muted);font-size:12px">Billed days / hours</td><td style="text-align:right;font-weight:700">${b.billedDays}d · ${b.billedHours}h</td></tr>
+      <tr><td style="padding:4px 0;color:var(--muted);font-size:12px">Gross (billed × €${fc.costRateEUR})</td><td style="text-align:right">${fm(b.grossContractor)}</td></tr>
+      <tr><td style="padding:4px 0;color:var(--muted);font-size:12px">− Card expenses (prev month)</td><td style="text-align:right;color:var(--red)">−${fm(b.prevCardExpenses)}</td></tr>
+      <tr><td style="padding:6px 0;font-size:13px;font-weight:700">📄 Forecast invoice</td><td style="text-align:right;font-size:15px;font-weight:700;color:var(--orange)">${fm(b.invoiceForecast)}</td></tr>
+      ${b.isClosed?`
+      <tr><td colspan="2"><hr style="border-color:var(--border);margin:6px 0"></td></tr>
+      <tr><td style="padding:4px 0;color:var(--muted);font-size:12px">Actual days worked</td><td style="text-align:right;color:var(--green);font-weight:700">${b.actualDays}</td></tr>
+      <tr><td style="padding:4px 0;color:var(--muted);font-size:12px">Next month adj.</td><td style="text-align:right;font-weight:600;${nextAdj>=0?'color:var(--green)':'color:var(--red)'}">${nextAdj>=0?'+':''}${nextAdj} days carried to next invoice</td></tr>`
+      :`<tr><td colspan="2" style="padding-top:8px;font-size:11px;color:var(--muted);font-style:italic">Fill actual days at month end — adjustment auto-flows to next invoice.</td></tr>`}
+      ${md.contractor.note?`<tr><td colspan="2" style="padding-top:6px;font-size:11px;color:var(--muted)">${md.contractor.note}</td></tr>`:''}
+    </table>`;
+
+  // ── P&L summary
+  document.getElementById('biz-pnl').innerHTML=`
+    <table style="width:100%;border-collapse:collapse">
+      <tr><td style="padding:5px 0;color:var(--muted);font-size:12px">Revenue (${b.pnlHours}h × €${fc.sellRateEUR})</td><td style="text-align:right;color:var(--green)">${fm(b.revenue)}</td></tr>
+      <tr><td colspan="2"><hr style="border-color:var(--border);margin:4px 0"></td></tr>
+      <tr><td style="padding:5px 0;color:var(--muted);font-size:12px">Contractor (${b.pnlHours}h × €${fc.costRateEUR})</td><td style="text-align:right;color:var(--red)">−${fm(b.pnlGross)}</td></tr>
+      <tr><td style="padding:2px 0 5px 14px;color:var(--muted);font-size:11px">└ Invoice</td><td style="text-align:right;color:var(--muted);font-size:11px">−${fm(b.invoiceForecast)}</td></tr>
+      <tr><td style="padding:2px 0 5px 14px;color:var(--muted);font-size:11px">└ Company card (prev month)</td><td style="text-align:right;color:var(--muted);font-size:11px">−${fm(b.prevCardExpenses)}</td></tr>
+      <tr style="font-weight:600"><td style="padding:6px 0;font-size:13px">Gross Profit</td><td style="text-align:right;font-size:14px;color:${b.laborMargin>=0?'var(--green)':'var(--red)'}">${fm(b.laborMargin)}</td></tr>
+      <tr><td colspan="2"><hr style="border-color:var(--border);margin:8px 0"></td></tr>
+      <tr><td style="padding:5px 0;color:var(--muted);font-size:12px">Fixed Costs</td><td style="text-align:right;color:var(--red)">−${fm(b.fixedTotal)}</td></tr>
+      <tr><td style="padding:5px 0;color:var(--muted);font-size:12px">Variable Costs</td><td style="text-align:right;color:var(--red)">−${fm(b.varTotal)}</td></tr>
+      <tr><td colspan="2"><hr style="border-color:var(--border);margin:8px 0"></td></tr>
+      <tr><td style="padding:6px 0;font-size:14px;font-weight:700">Net P&amp;L${!b.isClosed?' <span style=\'font-size:10px;color:var(--muted)\'>forecast</span>':''}</td>
+          <td style="text-align:right;font-size:17px;font-weight:700;color:${b.netPnl>=0?'var(--green)':'var(--red)'}">${fm(b.netPnl)}</td></tr>
+    </table>`;
+
+  // ── Fixed costs table
+  const fixedRows=(S.biz.fixedCosts||[]).map(f=>{
+    const CAT={admin:'Admin',software:'Software',infra:'Infra',other:'Other'};
+    return`<tr>
+      <td><strong>${f.name}</strong></td>
+      <td><span class="badge ${f.active?'b-blue':'b-gray'}">${CAT[f.category]||f.category}</span></td>
+      <td>${f.active?fm(f.amountEUR):'<span style="color:var(--muted)">paused</span>'}</td>
+      <td><label style="cursor:pointer"><input type="checkbox" ${f.active?'checked':''} onchange="bizToggleFixed('${f.id}',this.checked)" style="cursor:pointer"> Active</label></td>
+      <td><button class="btn-s" onclick="openBizModal('fixedcost','${f.id}')">Edit</button> <button class="btn-d" onclick="bizDelFixed('${f.id}')">✕</button></td></tr>`;
+  }).join('')||'<tr><td colspan="5" class="empty-st">No fixed costs. Click "+ Fixed Cost" to add.</td></tr>';
+  const fixedTotalRow=S.biz.fixedCosts.filter(f=>f.active).length
+    ?`<tr class="tr-total"><td colspan="2"><strong>TOTAL / month</strong></td><td><strong>${fm(b.fixedTotal)}</strong></td><td colspan="2"></td></tr>`:''
+  document.getElementById('biz-fixed').innerHTML=fixedRows+fixedTotalRow;
+
+  // ── Variable costs table
+  document.getElementById('biz-var-period').textContent=bizMonthLabel(key);
+  const varData=md.variableCosts||[];
+  const VCAT={conference:'Conference',travel:'Travel',equipment:'Equipment',investment:'Investment',training:'Training',other:'Other'};
+  const varRows=varData.map(v=>`<tr>
+    <td><strong>${v.name}</strong></td>
+    <td><span class="badge b-orange">${VCAT[v.category]||v.category}</span></td>
+    <td class="neg">−${fm(v.amountEUR)}</td>
+    <td style="color:var(--muted)">${v.date||'—'}</td>
+    <td class="nt">${v.note||''}</td>
+    <td><button class="btn-s" onclick="openBizModal('variablecost','${v.id}')">Edit</button> <button class="btn-d" onclick="bizDelVar('${v.id}')">✕</button></td></tr>`)
+    .join('')||'<tr><td colspan="6" class="empty-st">No variable costs this month.</td></tr>';
+  const varTotalRow=varData.length?`<tr class="tr-total"><td colspan="2"><strong>TOTAL</strong></td><td class="neg"><strong>−${fm(b.varTotal)}</strong></td><td colspan="3"></td></tr>`:'';
+  document.getElementById('biz-variable').innerHTML=varRows+varTotalRow;
+}
+
+// ── Biz helpers
+function bizToggleFixed(id,val){
+  const f=S.biz.fixedCosts.find(x=>x.id===id);if(f){f.active=val;save();renderBiz();}
+}
+function bizDelFixed(id){
+  if(!confirm('Remove this fixed cost?'))return;
+  S.biz.fixedCosts=S.biz.fixedCosts.filter(x=>x.id!==id);save();renderBiz();
+}
+function bizDelVar(id){
+  const key=bizMonthKey();
+  S.biz.months[key].variableCosts=S.biz.months[key].variableCosts.filter(x=>x.id!==id);
+  save();renderBiz();
+}
+
+// ── Biz modal
+let _bizModal={type:null,editId:null};
+function openBizModal(type,editId){
+  _bizModal={type,editId:editId||null};
+  const titles={settings:'⚙️ Contractor Settings',contractor:'👷 Edit Contractor — '+bizMonthLabel(bizMonthKey()),fixedcost:'🔒 Fixed Cost',variablecost:'📦 Variable Cost'};
+  document.getElementById('biz-m-title').textContent=titles[type]||type;
+  const c=S.biz.contractor;
+  if(type==='settings'){
+    document.getElementById('biz-m-body').innerHTML=`
+      <div class="frow">
+        <div class="fg"><label>Contractor Name</label><input id="bm-name" value="${c.name}"></div>
+        <div class="fg"><label>Hours per Day</label><input id="bm-hpd" type="number" step="0.5" min="1" max="24" value="${c.hoursPerDay}"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Your Cost Rate (EUR/hr) <span class="hint" style="text-transform:none;letter-spacing:0">what you pay him</span></label><input id="bm-cost" type="number" step="0.01" value="${c.costRateEUR}"></div>
+        <div class="fg"><label>Your Sell Rate (EUR/hr) <span class="hint" style="text-transform:none;letter-spacing:0">what you charge clients</span></label><input id="bm-sell" type="number" step="0.01" value="${c.sellRateEUR}"></div>
+      </div>`;
+  } else if(type==='contractor'){
+    const md=bizMonthData(bizMonthKey());
+    document.getElementById('biz-m-body').innerHTML=`
+      <div class="frow">
+        <div class="fg"><label>Forecast Days <span class="hint" style="text-transform:none;letter-spacing:0">days he plans to work this month</span></label><input id="bm-fdays" type="number" step="0.5" min="0" value="${md.contractor.forecastDays}"></div>
+        <div class="fg"><label>Actual Days Worked <span class="hint" style="text-transform:none;letter-spacing:0">fill at month end to auto-adjust next invoice</span></label><input id="bm-adays" type="number" step="0.5" min="0" value="${md.contractor.actualDays??''}" placeholder="leave blank if not closed yet"></div>
+      </div>
+      <div class="fg"><label>Company Card Expenses (EUR) <span class="hint" style="text-transform:none;letter-spacing:0">amount he spent on card — deducted from invoice</span></label><input id="bm-card" type="number" step="0.01" min="0" value="${md.contractor.cardExpenses||0}"></div>
+      <div class="fg"><label>Note</label><input id="bm-note" value="${md.contractor.note||''}"></div>`;
+  } else if(type==='fixedcost'){
+    const item=editId?S.biz.fixedCosts.find(x=>x.id===editId):null;
+    document.getElementById('biz-m-body').innerHTML=`
+      <div class="frow">
+        <div class="fg"><label>Name</label><input id="bm-fcname" value="${item?.name||''}"></div>
+        <div class="fg"><label>Monthly Amount (EUR)</label><input id="bm-fcamt" type="number" step="0.01" min="0" value="${item?.amountEUR||''}"></div>
+      </div>
+      <div class="fg"><label>Category</label><select id="bm-fccat">
+        <option value="admin"${(item?.category||'admin')==='admin'?' selected':''}>Admin</option>
+        <option value="software"${item?.category==='software'?' selected':''}>Software</option>
+        <option value="infra"${item?.category==='infra'?' selected':''}>Infra / Hosting</option>
+        <option value="other"${item?.category==='other'?' selected':''}>Other</option>
+      </select></div>`;
+  } else if(type==='variablecost'){
+    const key=bizMonthKey();
+    const item=editId?(S.biz.months[key]?.variableCosts||[]).find(x=>x.id===editId):null;
+    document.getElementById('biz-m-body').innerHTML=`
+      <div class="frow">
+        <div class="fg"><label>Description</label><input id="bm-vcname" value="${item?.name||''}"></div>
+        <div class="fg"><label>Amount (EUR)</label><input id="bm-vcamt" type="number" step="0.01" min="0" value="${item?.amountEUR||''}"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Category</label><select id="bm-vccat">
+          <option value="conference"${item?.category==='conference'?' selected':''}>Conference</option>
+          <option value="travel"${item?.category==='travel'?' selected':''}>Travel</option>
+          <option value="equipment"${item?.category==='equipment'?' selected':''}>Equipment</option>
+          <option value="investment"${item?.category==='investment'?' selected':''}>Investment</option>
+          <option value="training"${item?.category==='training'?' selected':''}>Training</option>
+          <option value="other"${(item?.category||'other')==='other'?' selected':''}>Other</option>
+        </select></div>
+        <div class="fg"><label>Date</label><input id="bm-vcdate" type="date" value="${item?.date||new Date().toISOString().slice(0,10)}"></div>
+      </div>
+      <div class="fg"><label>Note</label><input id="bm-vcnote" value="${item?.note||''}"></div>`;
+  }
+  document.getElementById('biz-modal-ov').classList.add('open');
+}
+function closeBizModal(){ document.getElementById('biz-modal-ov').classList.remove('open'); }
+function saveBizModal(){
+  const{type,editId}=_bizModal;
+  const V=id=>document.getElementById(id)?.value||'';
+  const VN=id=>parseFloat(document.getElementById(id)?.value)||0;
+  if(type==='settings'){
+    S.biz.contractor.name=V('bm-name')||S.biz.contractor.name;
+    S.biz.contractor.hoursPerDay=VN('bm-hpd')||S.biz.contractor.hoursPerDay;
+    S.biz.contractor.costRateEUR=VN('bm-cost')||S.biz.contractor.costRateEUR;
+    S.biz.contractor.sellRateEUR=VN('bm-sell')||S.biz.contractor.sellRateEUR;
+  } else if(type==='contractor'){
+    const md=bizMonthData(bizMonthKey());
+    md.contractor.forecastDays=VN('bm-fdays');
+    const aRaw=document.getElementById('bm-adays')?.value;
+    md.contractor.actualDays=(aRaw&&aRaw.trim()!=='')?parseFloat(aRaw):null;
+    md.contractor.cardExpenses=VN('bm-card');
+    md.contractor.note=V('bm-note');
+  } else if(type==='fixedcost'){
+    const item={id:editId||('fc'+Date.now()),name:V('bm-fcname'),category:V('bm-fccat'),amountEUR:VN('bm-fcamt'),active:true};
+    if(editId){const i=S.biz.fixedCosts.findIndex(x=>x.id===editId);if(i>=0){item.active=S.biz.fixedCosts[i].active;S.biz.fixedCosts[i]=item;}}
+    else S.biz.fixedCosts.push(item);
+  } else if(type==='variablecost'){
+    const key=bizMonthKey();
+    bizMonthData(key);
+    const item={id:editId||('vc'+Date.now()),name:V('bm-vcname'),category:V('bm-vccat'),amountEUR:VN('bm-vcamt'),date:V('bm-vcdate'),note:V('bm-vcnote')};
+    if(editId){const i=S.biz.months[key].variableCosts.findIndex(x=>x.id===editId);if(i>=0)S.biz.months[key].variableCosts[i]=item;}
+    else S.biz.months[key].variableCosts.push(item);
+  }
+  save();closeBizModal();renderBiz();
+}
+
+// ═══════════════════════════════════════════════════════════
+// PASSWORD PROTECTION
+// ═══════════════════════════════════════════════════════════
+async function sha256(msg){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(msg));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function unlock(){
+  const user=document.getElementById('lock-user').value.trim();
+  const pass=document.getElementById('lock-input').value;
+  const err=document.getElementById('lock-error');
+  if(!user||!pass){err.textContent='Please enter username and password';return;}
+  const uh=await sha256(user);
+  const ph=await sha256(pass);
+  if(uh===window.__WT_USER__&&ph===window.__WT_PASS__){
+    // Owner login
+    currentRole='owner';
+    document.body.classList.remove('contractor-mode');
+    document.getElementById('lock-screen').style.display='none';
+    renderDash();setTimeout(doRefresh,600);
+  }else if(window.__WT_CONT_USER__&&window.__WT_CONT_PASS__&&uh===window.__WT_CONT_USER__&&ph===window.__WT_CONT_PASS__){
+    // Contractor login
+    currentRole='contractor';
+    document.body.classList.add('contractor-mode');
+    document.getElementById('lock-screen').style.display='none';
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('page-contractor').classList.add('active');
+    renderContractor();
+  }else{
+    err.textContent='Incorrect username or password';
+    document.getElementById('lock-input').value='';
+    document.getElementById('lock-input').focus();
+  }
+}
+function previewContractor(){
+  _contPreview=true;
+  document.body.classList.add('contractor-mode');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-contractor').classList.add('active');
+  renderContractor();
+}
+function contractorLogout(){
+  if(_contPreview){
+    _contPreview=false;
+    document.body.classList.remove('contractor-mode');
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('page-biz').classList.add('active');
+    renderBiz();
+    return;
+  }
+  currentRole='owner';
+  document.body.classList.remove('contractor-mode');
+  document.getElementById('lock-screen').style.display='flex';
+  document.getElementById('lock-user').value='';
+  document.getElementById('lock-input').value='';
+  document.getElementById('lock-error').textContent='';
+  document.getElementById('lock-user').focus();
+}
+async function setPassword(){
+  const np=document.getElementById('s-newpass').value;
+  const cp=document.getElementById('s-confpass').value;
+  const msg=document.getElementById('pass-msg');
+  if(!np){msg.style.color='#f85149';msg.textContent='Password cannot be empty';return;}
+  if(np!==cp){msg.style.color='#f85149';msg.textContent='Passwords do not match';return;}
+  const h=await sha256(np);
+  const r=await fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({passHash:h})});
+  if(r.ok){
+    window.__WT_PASS__=h;
+    msg.style.color='#3fb950';msg.textContent='✅ Password set! It will be required on next open.';
+    document.getElementById('s-newpass').value='';document.getElementById('s-confpass').value='';
+  }else{msg.style.color='#f85149';msg.textContent='Error: server not running. Start server.py first.';}
+}
+async function removePassword(){
+  if(!confirm('Remove password protection?'))return;
+  const r=await fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({passHash:''})});
+  const msg=document.getElementById('pass-msg');
+  if(r.ok){window.__WT_PASS__='';msg.style.color='#3fb950';msg.textContent='✅ Password removed.';}
+  else{msg.style.color='#f85149';msg.textContent='Error: server not running.';}
+}
+async function setContractorCreds(){
+  const user=document.getElementById('s-contuser').value.trim();
+  const pass=document.getElementById('s-contpass').value;
+  const msg=document.getElementById('cont-cred-msg');
+  if(!user||!pass){msg.style.color='#f85149';msg.textContent='Both username and password are required';return;}
+  const uh=await sha256(user);
+  const ph=await sha256(pass);
+  const r=await fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contUserHash:uh,contPassHash:ph})});
+  if(r.ok){
+    window.__WT_CONT_USER__=uh;window.__WT_CONT_PASS__=ph;
+    msg.style.color='#3fb950';msg.textContent=`✅ Contractor credentials saved! Username: "${user}"`;
+    document.getElementById('s-contuser').value='';document.getElementById('s-contpass').value='';
+  }else{msg.style.color='#f85149';msg.textContent='Error: server not running. Start server.py first.';}
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+loadState();
+// Auto-save to file on first load (migrates localStorage data to the file)
+setTimeout(()=>{
+  fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:S})}).catch(()=>{});
+},1500);
+if(window.__WT_PASS__&&window.__WT_USER__){
+  document.getElementById('lock-screen').style.display='flex';
+  document.getElementById('lock-user').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('lock-input').focus();});
+  document.getElementById('lock-input').addEventListener('keydown',e=>{if(e.key==='Enter')unlock();});
+}else{
+  renderDash();setTimeout(doRefresh,600);
+}
+</script>
+</body>
+</html>
