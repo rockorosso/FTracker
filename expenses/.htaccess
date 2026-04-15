@@ -1,0 +1,15 @@
+DirectoryIndex index.php
+
+# Block direct access to config and sensitive files
+<FilesMatch "^config\.php$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Prevent PHP execution in uploads folder
+<IfModule mod_php.c>
+    <FilesMatch "\.php$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>

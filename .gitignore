@@ -1,0 +1,7 @@
+# Never commit sensitive config or server data
+expenses/config.php
+data.json
+config.json
+expenses/uploads/*
+!expenses/uploads/.htaccess
+!expenses/uploads/.gitkeep

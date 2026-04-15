@@ -1,0 +1,21 @@
+# WealthTrack — .htaccess
+
+# Serve index.php by default
+DirectoryIndex index.php
+
+# Block direct access to sensitive data files
+<FilesMatch "^(data|config)\.json$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Block direct access to the server script
+<FilesMatch "^server\.py$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Optional: force HTTPS (uncomment once SSL is active on the subdomain)
+# RewriteEngine On
+# RewriteCond %{HTTPS} off
+# RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]

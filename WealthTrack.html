@@ -809,7 +809,7 @@ function fixKeys(){
 function save(){
   localStorage.setItem('wt_v3',JSON.stringify(S));
   // Persist to file via server so all browsers always have the latest data
-  fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:S})})
+  fetch('save.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:S})})
     .catch(()=>{});// silent if server not running
 }
 
@@ -3131,7 +3131,7 @@ async function setPassword(){
   if(!np){msg.style.color='#f85149';msg.textContent='Password cannot be empty';return;}
   if(np!==cp){msg.style.color='#f85149';msg.textContent='Passwords do not match';return;}
   const h=await sha256(np);
-  const r=await fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({passHash:h})});
+  const r=await fetch('save.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({passHash:h})});
   if(r.ok){
     window.__WT_PASS__=h;
     msg.style.color='#3fb950';msg.textContent='✅ Password set! It will be required on next open.';
@@ -3140,7 +3140,7 @@ async function setPassword(){
 }
 async function removePassword(){
   if(!confirm('Remove password protection?'))return;
-  const r=await fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({passHash:''})});
+  const r=await fetch('save.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({passHash:''})});
   const msg=document.getElementById('pass-msg');
   if(r.ok){window.__WT_PASS__='';msg.style.color='#3fb950';msg.textContent='✅ Password removed.';}
   else{msg.style.color='#f85149';msg.textContent='Error: server not running.';}
@@ -3152,7 +3152,7 @@ async function setContractorCreds(){
   if(!user||!pass){msg.style.color='#f85149';msg.textContent='Both username and password are required';return;}
   const uh=await sha256(user);
   const ph=await sha256(pass);
-  const r=await fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contUserHash:uh,contPassHash:ph})});
+  const r=await fetch('save.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contUserHash:uh,contPassHash:ph})});
   if(r.ok){
     window.__WT_CONT_USER__=uh;window.__WT_CONT_PASS__=ph;
     msg.style.color='#3fb950';msg.textContent=`✅ Contractor credentials saved! Username: "${user}"`;
@@ -3166,7 +3166,7 @@ async function setContractorCreds(){
 loadState();
 // Auto-save to file on first load (migrates localStorage data to the file)
 setTimeout(()=>{
-  fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:S})}).catch(()=>{});
+  fetch('save.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:S})}).catch(()=>{});
 },1500);
 if(window.__WT_PASS__&&window.__WT_USER__){
   document.getElementById('lock-screen').style.display='flex';
