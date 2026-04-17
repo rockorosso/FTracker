@@ -248,7 +248,7 @@ tr:hover td{background:var(--surface2)}
       <div id="photo-empty"><div style="font-size:36px;margin-bottom:6px">📷</div><div style="font-weight:600">Tap to add photo</div><div style="color:var(--muted);font-size:12px;margin-top:4px">Take a photo or choose from gallery</div></div>
       <div id="photo-preview" style="display:none"><img id="photo-img" src=""></div>
     </div>
-    <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event)">
+    <input type="file" id="photo-input" accept="image/*" style="display:none" onchange="handlePhoto(event)">
     <button class="btn-ai" id="btn-extract" style="display:none" onclick="extractFromPhoto()">🤖 Auto-extract from photo</button>
     <div class="frow" style="margin-top:12px">
       <div class="fg"><label>Date</label><input type="date" id="m-date"></div>
