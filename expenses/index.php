@@ -103,11 +103,16 @@ tr:hover td{background:var(--surface2)}
 /* ── Photo upload area ── */
 .photo-area{border:2px dashed var(--border);border-radius:8px;padding:18px;text-align:center;cursor:pointer;margin-bottom:4px;transition:border-color .2s}
 .photo-area:hover{border-color:var(--accent)}
-.photo-area img{max-width:100%;max-height:180px;border-radius:6px;object-fit:contain}
+.photo-area img{max-width:100%;max-height:200px;border-radius:6px;object-fit:contain;cursor:zoom-in}
+.photo-actions{display:flex;gap:8px;margin-top:6px;margin-bottom:4px}
+.photo-hint{font-size:11px;color:var(--muted);text-align:center;margin-top:4px}
 
 /* ── Lightbox ── */
-#lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:none;align-items:center;justify-content:center;cursor:pointer}
-#lightbox img{max-width:95vw;max-height:95vh;border-radius:8px;object-fit:contain}
+#lightbox{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;display:none;flex-direction:column;align-items:center;justify-content:center}
+#lightbox-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:20px;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10000}
+#lightbox-hint{position:absolute;bottom:20px;color:rgba(255,255,255,.5);font-size:12px;pointer-events:none}
+#lightbox-img-wrap{overflow:hidden;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center}
+#lightbox-img{max-width:95vw;max-height:95vh;border-radius:6px;object-fit:contain;transform-origin:center center;transition:transform .1s;user-select:none;touch-action:none}
 
 /* ── Chart ── */
 .chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px}
@@ -238,7 +243,13 @@ tr:hover td{background:var(--surface2)}
 </div>
 
 <!-- LIGHTBOX -->
-<div id="lightbox" onclick="this.style.display='none'"><img id="lightbox-img" src=""></div>
+<div id="lightbox">
+  <button id="lightbox-close" onclick="closeLightbox()">✕</button>
+  <div id="lightbox-img-wrap">
+    <img id="lightbox-img" src="">
+  </div>
+  <div id="lightbox-hint">Pinch to zoom · Double-tap to reset</div>
+</div>
 
 <!-- ADD/EDIT MODAL -->
 <div class="overlay" id="modal-ov">
@@ -246,8 +257,15 @@ tr:hover td{background:var(--surface2)}
     <h3 id="modal-title">🧾 Add Expense</h3>
     <div class="photo-area" id="photo-area" onclick="document.getElementById('photo-input').click()">
       <div id="photo-empty"><div style="font-size:36px;margin-bottom:6px">📷</div><div style="font-weight:600">Tap to add photo</div><div style="color:var(--muted);font-size:12px;margin-top:4px">Take a photo or choose from gallery</div></div>
-      <div id="photo-preview" style="display:none"><img id="photo-img" src=""></div>
+      <div id="photo-preview" style="display:none">
+        <img id="photo-img" src="" onclick="event.stopPropagation();openLightboxFromModal()" title="Tap to zoom">
+      </div>
     </div>
+    <div id="photo-actions" class="photo-actions" style="display:none">
+      <button class="btn-s" style="flex:1" onclick="document.getElementById('photo-input').click()">🔄 Change Photo</button>
+      <button class="btn-s" style="flex:1" onclick="openLightboxFromModal()">🔍 View Full Size</button>
+    </div>
+    <div id="photo-hint-text" class="photo-hint" style="display:none">Tap photo or "View Full Size" to zoom in and read the invoice</div>
     <input type="file" id="photo-input" accept="image/*" style="display:none" onchange="handlePhoto(event)">
     <button class="btn-ai" id="btn-extract" style="display:none" onclick="extractFromPhoto()">🤖 Auto-extract from photo</button>
     <div class="frow" style="margin-top:12px">
@@ -531,10 +549,13 @@ function exportCSV() {
 function openModal(id) {
   editingId = id || null;
   photoFile = null; photoPreviewData = null;
-  document.getElementById('photo-empty').style.display = 'block';
-  document.getElementById('photo-preview').style.display = 'none';
+  document.getElementById('photo-empty').style.display    = 'block';
+  document.getElementById('photo-preview').style.display  = 'none';
   document.getElementById('photo-input').value = '';
-  document.getElementById('btn-extract').style.display = 'none';
+  document.getElementById('btn-extract').style.display    = 'none';
+  document.getElementById('photo-actions').style.display  = 'none';
+  document.getElementById('photo-hint-text').style.display = 'none';
+  document.getElementById('photo-area').onclick = () => document.getElementById('photo-input').click();
   document.getElementById('modal-title').textContent = id ? '🧾 Edit Expense' : '🧾 Add Expense';
 
   // Defaults
@@ -557,9 +578,12 @@ function openModal(id) {
       document.getElementById('m-note').value     = e.note || '';
       if (e.photo_url) {
         document.getElementById('photo-img').src = e.photo_url;
-        document.getElementById('photo-preview').style.display = 'block';
-        document.getElementById('photo-empty').style.display   = 'none';
-        document.getElementById('btn-extract').style.display   = 'block';
+        document.getElementById('photo-preview').style.display  = 'block';
+        document.getElementById('photo-empty').style.display    = 'none';
+        document.getElementById('btn-extract').style.display    = 'block';
+        document.getElementById('photo-actions').style.display  = 'flex';
+        document.getElementById('photo-hint-text').style.display = 'block';
+        document.getElementById('photo-area').onclick = null;
         photoPreviewData = {url: e.photo_url, fromServer: true};
       }
     }
@@ -581,9 +605,12 @@ async function handlePhoto(event) {
   const data = await compressImage(file);
   photoPreviewData = {dataUrl: data};
   document.getElementById('photo-img').src = data;
-  document.getElementById('photo-preview').style.display = 'block';
-  document.getElementById('photo-empty').style.display   = 'none';
-  document.getElementById('btn-extract').style.display   = 'block';
+  document.getElementById('photo-preview').style.display  = 'block';
+  document.getElementById('photo-empty').style.display    = 'none';
+  document.getElementById('btn-extract').style.display    = 'block';
+  document.getElementById('photo-actions').style.display  = 'flex';
+  document.getElementById('photo-hint-text').style.display = 'block';
+  document.getElementById('photo-area').onclick = null;
 }
 
 function compressImage(file) {
@@ -680,10 +707,59 @@ async function deleteExpense(id) {
 }
 
 // ── Lightbox ───────────────────────────────────────────────────
+let _lbScale=1, _lbLastDist=0, _lbOriginX=0, _lbOriginY=0;
+
 function openLightbox(url) {
-  document.getElementById('lightbox-img').src = url;
-  document.getElementById('lightbox').style.display = 'flex';
+  _lbScale=1;
+  const img = document.getElementById('lightbox-img');
+  img.style.transform = 'scale(1)';
+  img.src = url;
+  const lb = document.getElementById('lightbox');
+  lb.style.display = 'flex';
 }
+
+function openLightboxFromModal() {
+  const src = document.getElementById('photo-img').src;
+  if (src) openLightbox(src);
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').style.display = 'none';
+  _lbScale = 1;
+}
+
+// Close on background tap (not on image)
+document.getElementById('lightbox-img-wrap').addEventListener('click', function(e){
+  if (e.target === this) closeLightbox();
+});
+
+// Double-tap to reset zoom
+let _lbLastTap = 0;
+document.getElementById('lightbox-img').addEventListener('click', function(){
+  const now = Date.now();
+  if (now - _lbLastTap < 300) { _lbScale=1; this.style.transform='scale(1)'; }
+  _lbLastTap = now;
+});
+
+// Pinch-to-zoom
+document.getElementById('lightbox-img').addEventListener('touchstart', function(e){
+  if (e.touches.length === 2) {
+    _lbLastDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    e.preventDefault();
+  }
+}, {passive:false});
+
+document.getElementById('lightbox-img').addEventListener('touchmove', function(e){
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    _lbScale = Math.min(Math.max(_lbScale * (dist / _lbLastDist), 1), 5);
+    _lbLastDist = dist;
+    this.style.transform = `scale(${_lbScale})`;
+  }
+}, {passive:false});
+
+function openLightboxFromTable(url) { openLightbox(url); }
 </script>
 </body>
 </html>
