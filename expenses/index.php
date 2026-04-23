@@ -256,7 +256,7 @@ tr:hover td{background:var(--surface2)}
   <div class="modal">
     <h3 id="modal-title">🧾 Add Expense</h3>
     <div class="photo-area" id="photo-area" onclick="document.getElementById('photo-input').click()">
-      <div id="photo-empty"><div style="font-size:36px;margin-bottom:6px">📷</div><div style="font-weight:600">Tap to add photo</div><div style="color:var(--muted);font-size:12px;margin-top:4px">Take a photo or choose from gallery</div></div>
+      <div id="photo-empty"><div style="font-size:36px;margin-bottom:6px">📎</div><div style="font-weight:600">Tap to add photo or PDF</div><div style="color:var(--muted);font-size:12px;margin-top:4px">Choose from gallery, camera or files</div></div>
       <div id="photo-preview" style="display:none">
         <img id="photo-img" src="" onclick="event.stopPropagation();openLightboxFromModal()" title="Tap to zoom">
       </div>
@@ -266,7 +266,7 @@ tr:hover td{background:var(--surface2)}
       <button class="btn-s" style="flex:1" onclick="openLightboxFromModal()">🔍 View Full Size</button>
     </div>
     <div id="photo-hint-text" class="photo-hint" style="display:none">Tap photo or "View Full Size" to zoom in and read the invoice</div>
-    <input type="file" id="photo-input" accept="image/*" style="display:none" onchange="handlePhoto(event)">
+    <input type="file" id="photo-input" accept="image/*,application/pdf" style="display:none" onchange="handlePhoto(event)">
     <button class="btn-ai" id="btn-extract" style="display:none" onclick="extractFromPhoto()">🤖 Auto-extract from photo</button>
     <div class="frow" style="margin-top:12px">
       <div class="fg"><label>Date</label><input type="date" id="m-date"></div>
@@ -462,9 +462,12 @@ async function loadExpenses() {
 }
 
 function expRow(e, showUser, compact) {
+  const isPDF = e.photo_url && e.photo_url.toLowerCase().endsWith('.pdf');
   const photo = e.photo_url
-    ? `<img class="thumb" src="${e.photo_url}" onclick="openLightbox('${e.photo_url}')" alt="receipt">`
-    : `<div class="thumb-placeholder" onclick="openModal(${e.id})">📄</div>`;
+    ? (isPDF
+        ? `<div class="thumb-placeholder" onclick="window.open('${e.photo_url}','_blank')" title="View PDF" style="cursor:pointer">📄</div>`
+        : `<img class="thumb" src="${e.photo_url}" onclick="openLightbox('${e.photo_url}')" alt="receipt">`)
+    : `<div class="thumb-placeholder" style="cursor:default">—</div>`;
   const userTd = showUser ? `<td>${e.user_name||''}</td>` : '';
   const actions = compact ? '' : `<td><button class="btn-s" style="margin-right:4px" onclick="openModal(${e.id})">✏️</button><button class="btn-d" onclick="deleteExpense(${e.id})">✕</button></td>`;
   return `<tr>
@@ -596,20 +599,38 @@ function closeModal() {
   editingId = null; photoFile = null; photoPreviewData = null;
 }
 
-// ── Photo handling ─────────────────────────────────────────────
+// ── Photo / PDF handling ───────────────────────────────────────
 async function handlePhoto(event) {
   const file = event.target.files[0];
   if (!file) return;
   photoFile = file;
-  // Preview
-  const data = await compressImage(file);
-  photoPreviewData = {dataUrl: data};
-  document.getElementById('photo-img').src = data;
+
+  const isPDF = file.type === 'application/pdf';
+
+  if (isPDF) {
+    // Show PDF placeholder preview
+    photoPreviewData = {isPDF: true, name: file.name};
+    document.getElementById('photo-img').src = '';
+    document.getElementById('photo-img').style.display = 'none';
+    document.getElementById('photo-preview').innerHTML =
+      `<div style="padding:20px;text-align:center">
+        <div style="font-size:48px;margin-bottom:8px">📄</div>
+        <div style="font-weight:600;color:var(--text)">${file.name}</div>
+        <div style="color:var(--muted);font-size:12px;margin-top:4px">${(file.size/1024).toFixed(0)} KB · PDF</div>
+      </div>`;
+  } else {
+    // Image — compress and preview
+    const data = await compressImage(file);
+    photoPreviewData = {dataUrl: data};
+    document.getElementById('photo-preview').innerHTML =
+      `<img id="photo-img" src="${data}" onclick="event.stopPropagation();openLightboxFromModal()" title="Tap to zoom" style="max-width:100%;max-height:200px;border-radius:6px;object-fit:contain;cursor:zoom-in">`;
+  }
+
   document.getElementById('photo-preview').style.display  = 'block';
   document.getElementById('photo-empty').style.display    = 'none';
-  document.getElementById('btn-extract').style.display    = 'block';
+  document.getElementById('btn-extract').style.display    = isPDF ? 'none' : 'block';
   document.getElementById('photo-actions').style.display  = 'flex';
-  document.getElementById('photo-hint-text').style.display = 'block';
+  document.getElementById('photo-hint-text').style.display = isPDF ? 'none' : 'block';
   document.getElementById('photo-area').onclick = null;
 }
 
@@ -719,8 +740,13 @@ function openLightbox(url) {
 }
 
 function openLightboxFromModal() {
-  const src = document.getElementById('photo-img').src;
-  if (src) openLightbox(src);
+  if (photoPreviewData?.isPDF && photoFile) {
+    const url = URL.createObjectURL(photoFile);
+    window.open(url, '_blank');
+    return;
+  }
+  const img = document.getElementById('photo-img');
+  if (img && img.src) openLightbox(img.src);
 }
 
 function closeLightbox() {
