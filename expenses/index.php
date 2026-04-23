@@ -201,7 +201,7 @@ tr:hover td{background:var(--surface2)}
       </div>
       <div id="user-tabs" class="user-tabs" style="display:none"></div>
       <div class="tb">
-        <div style="overflow-x:auto"><table><thead><tr><th>Photo</th><th>Date</th><th>Company</th><th>Category</th><th>Amount</th><th id="exp-user-th" style="display:none">User</th><th></th></tr></thead>
+        <div style="overflow-x:auto"><table><thead><tr><th>Photo</th><th>Date</th><th>Company</th><th>Category</th><th>Amount</th><th id="exp-user-th" style="display:none">User</th><th>Note</th><th></th></tr></thead>
         <tbody id="exp-tbody"></tbody></table></div>
       </div>
     </div>
@@ -272,10 +272,10 @@ tr:hover td{background:var(--surface2)}
       <div class="fg"><label>Date</label><input type="date" id="m-date"></div>
       <div class="fg"><label>Category</label>
         <select id="m-cat">
-          <option value="travel">✈️ Travel & Transport</option>
+          <option value="transport_work">🚗 Transport Work</option>
+          <option value="transport_entertainment">🎉 Transport Entertainment</option>
           <option value="equipment">🖥 Equipment & Supplies</option>
           <option value="software">💻 Software & Subscriptions</option>
-          <option value="food">🍽 Food & Entertainment</option>
           <option value="other">📋 Other</option>
         </select>
       </div>
@@ -318,8 +318,8 @@ const api = (action, opts={}) => fetch(`api.php?action=${action}`, {method:'GET'
 const post = (action, body) => fetch(`api.php?action=${action}`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}).then(r=>r.json());
 const monthLabel = m => { const [y,mo]=m.split('-'); return new Date(+y,+mo-1,1).toLocaleString('en',{month:'long',year:'numeric'}); };
 const fm = (v,cur='EUR') => new Intl.NumberFormat('en-US',{style:'currency',currency:cur,minimumFractionDigits:2}).format(v);
-const catLabel = {'travel':'✈️ Travel','equipment':'🖥 Equipment','software':'💻 Software','food':'🍽 Food','other':'📋 Other'};
-const catClass = {'travel':'b-travel','equipment':'b-equipment','software':'b-software','food':'b-food','other':'b-other'};
+const catLabel = {'transport_work':'🚗 Transport Work','transport_entertainment':'🎉 Transport Entert.','equipment':'🖥 Equipment','software':'💻 Software','other':'📋 Other'};
+const catClass = {'transport_work':'b-travel','transport_entertainment':'b-food','equipment':'b-equipment','software':'b-software','other':'b-other'};
 
 // ── Init ───────────────────────────────────────────────────────
 (async () => {
@@ -470,6 +470,7 @@ function expRow(e, showUser, compact) {
     : `<div class="thumb-placeholder" style="cursor:default">—</div>`;
   const userTd = showUser ? `<td>${e.user_name||''}</td>` : '';
   const actions = compact ? '' : `<td><button class="btn-s" style="margin-right:4px" onclick="openModal(${e.id})">✏️</button><button class="btn-d" onclick="deleteExpense(${e.id})">✕</button></td>`;
+  const noteTd = `<td style="color:var(--muted);font-size:12px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.note||''}</td>`;
   return `<tr>
     <td>${photo}</td>
     <td style="white-space:nowrap">${e.date}</td>
@@ -477,6 +478,7 @@ function expRow(e, showUser, compact) {
     <td><span class="badge ${catClass[e.category]||'b-other'}">${catLabel[e.category]||e.category}</span></td>
     <td style="font-weight:600;color:var(--red);white-space:nowrap">${fm(e.amount, e.currency)}</td>
     ${userTd}
+    ${noteTd}
     ${actions}
   </tr>`;
 }
@@ -565,7 +567,7 @@ function openModal(id) {
   const today = new Date().toISOString().slice(0,10);
   document.getElementById('m-date').value    = today;
   document.getElementById('m-company').value = '';
-  document.getElementById('m-cat').value     = 'other';
+  document.getElementById('m-cat').value     = 'transport_work';
   document.getElementById('m-amount').value  = '';
   document.getElementById('m-currency').value = 'EUR';
   document.getElementById('m-note').value    = '';
