@@ -1,4 +1,14 @@
 <?php
+// Keep sessions alive for 30 days
+$lifetime = 30 * 24 * 3600;
+ini_set('session.gc_maxlifetime', $lifetime);
+session_set_cookie_params([
+    'lifetime' => $lifetime,
+    'path'     => '/',
+    'secure'   => isset($_SERVER['HTTPS']),
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
 session_start();
 require_once __DIR__ . '/config.php';
 

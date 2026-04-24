@@ -3,13 +3,23 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Expense Tracker</title>
+
+<!-- PWA -->
+<link rel="manifest" href="/expenses/manifest.json">
+<meta name="theme-color" content="#3fb950">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Expenses">
+<link rel="apple-touch-icon" href="/expenses/icons/icon-192.png">
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
 :root{--bg:#0d1117;--surface:#161b22;--surface2:#21262d;--surface3:#30363d;--border:#30363d;--text:#e6edf3;--muted:#7d8590;--green:#3fb950;--red:#f85149;--blue:#58a6ff;--orange:#ffa657;--purple:#bc8cff;--gold:#d29922;--accent:#3fb950;--accent-bg:#238636}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;padding-bottom:env(safe-area-inset-bottom)}
 a{color:var(--blue);text-decoration:none}
 
 /* ── Login ── */
@@ -889,6 +899,28 @@ document.getElementById('lightbox-img').addEventListener('touchmove', function(e
 }, {passive:false});
 
 function openLightboxFromTable(url) { openLightbox(url); }
+
+// ── Service Worker (PWA) ───────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/expenses/sw.js')
+      .catch(err => console.warn('SW registration failed:', err));
+  });
+}
+
+// ── iOS "Add to Home Screen" hint (shown once) ─────────────────
+window.addEventListener('load', () => {
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true;
+  const shown = localStorage.getItem('pwa-hint-shown');
+  if (isIos && !isStandalone && !shown) {
+    const hint = document.createElement('div');
+    hint.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#161b22;border:1px solid #3fb950;border-radius:12px;padding:12px 18px;font-size:13px;color:#e6edf3;z-index:9999;max-width:300px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.5)';
+    hint.innerHTML = '📲 <strong>Install this app</strong><br>Tap <strong>Share</strong> → <strong>Add to Home Screen</strong> to use it like a native app.<br><br><button onclick="this.parentNode.remove();localStorage.setItem(\'pwa-hint-shown\',\'1\')" style="margin-top:6px;padding:6px 16px;background:#3fb950;color:#000;border:none;border-radius:8px;font-weight:600;cursor:pointer">Got it</button>';
+    document.body.appendChild(hint);
+    localStorage.setItem('pwa-hint-shown', '1');
+  }
+});
 </script>
 </body>
 </html>
