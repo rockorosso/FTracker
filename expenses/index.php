@@ -167,6 +167,7 @@ tr:hover td{background:var(--surface2)}
     <button class="nav-btn active" data-page="dashboard" onclick="showPage('dashboard')">📊 Dashboard</button>
     <button class="nav-btn" data-page="expenses" onclick="showPage('expenses')">🧾 Expenses</button>
     <button class="nav-btn" data-page="report" onclick="showPage('report')">📈 Report</button>
+    <button class="nav-btn" id="nav-settings" data-page="settings" onclick="showPage('settings')" style="display:none">⚙️ Settings</button>
   </div>
   <div class="main">
 
@@ -242,6 +243,35 @@ tr:hover td{background:var(--surface2)}
       </div>
     </div>
 
+    <!-- SETTINGS (admin only) -->
+    <div id="page-settings" class="page-content" style="display:none">
+      <div class="sh"><span class="st">⚙️ Settings</span></div>
+      <div class="tb">
+        <div class="tbh"><span class="tbt">Manage Users</span></div>
+        <div style="overflow-x:auto"><table>
+          <thead><tr><th>Name</th><th>Username</th><th>Role</th><th></th></tr></thead>
+          <tbody id="settings-users-tbody"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- EDIT USER MODAL -->
+<div class="overlay" id="edit-user-ov" onclick="if(event.target===this)closeEditUser()">
+  <div class="modal">
+    <h3>✏️ Edit User</h3>
+    <input type="hidden" id="eu-id">
+    <div class="fg"><label>Full Name</label><input id="eu-name" placeholder="Full name"></div>
+    <div class="fg"><label>Username</label><input id="eu-username" placeholder="Username" autocomplete="off"></div>
+    <div class="fg"><label>New Password <span style="color:var(--muted);font-size:11px">(leave blank to keep current)</span></label>
+      <input type="password" id="eu-password" placeholder="New password" autocomplete="new-password"></div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn-p" style="flex:1" onclick="saveUser()">💾 Save</button>
+      <button class="btn-s" style="flex:1" onclick="closeEditUser()">Cancel</button>
+    </div>
+    <div id="eu-msg" style="margin-top:10px;font-size:13px;text-align:center"></div>
   </div>
 </div>
 
@@ -362,7 +392,10 @@ function startApp(user) {
   document.getElementById('app').style.display = 'block';
   document.getElementById('topbar-name').textContent = user.name;
   document.getElementById('topbar-role').textContent = user.role;
-  if (user.role === 'admin') loadUsers();
+  if (user.role === 'admin') {
+    loadUsers();
+    document.getElementById('nav-settings').style.display = '';
+  }
   renderCurrentMonth();
   loadPage('dashboard');
 }
@@ -380,6 +413,7 @@ function loadPage(page) {
   if (page === 'dashboard') loadDashboard();
   else if (page === 'expenses') loadExpenses();
   else if (page === 'report') loadReport();
+  else if (page === 'settings') loadSettings();
 }
 
 function renderCurrentMonth() {
@@ -401,6 +435,61 @@ function changeMonth(dir) {
 async function loadUsers() {
   const res = await api('users');
   if (res.users) allUsers = res.users;
+}
+
+function loadSettings() {
+  const tbody = document.getElementById('settings-users-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = allUsers.map(u => `
+    <tr>
+      <td>${u.name}</td>
+      <td><code style="background:var(--surface);padding:2px 6px;border-radius:4px;font-size:12px">${u.username}</code></td>
+      <td><span class="badge ${u.role==='admin'?'b-software':'b-other'}">${u.role}</span></td>
+      <td><button class="btn-s" onclick="openEditUser(${u.id})">✏️ Edit</button></td>
+    </tr>`).join('') || '<tr><td colspan="4" class="empty-row">No users found.</td></tr>';
+}
+
+function openEditUser(id) {
+  const u = allUsers.find(x => x.id == id);
+  if (!u) return;
+  document.getElementById('eu-id').value       = u.id;
+  document.getElementById('eu-name').value     = u.name;
+  document.getElementById('eu-username').value = u.username;
+  document.getElementById('eu-password').value = '';
+  document.getElementById('eu-msg').textContent = '';
+  document.getElementById('edit-user-ov').style.display = 'flex';
+}
+
+function closeEditUser() {
+  document.getElementById('edit-user-ov').style.display = 'none';
+}
+
+async function saveUser() {
+  const id       = document.getElementById('eu-id').value;
+  const name     = document.getElementById('eu-name').value.trim();
+  const username = document.getElementById('eu-username').value.trim();
+  const password = document.getElementById('eu-password').value;
+  const msg      = document.getElementById('eu-msg');
+
+  if (!name || !username) { msg.style.color='var(--red)'; msg.textContent = 'Name and username are required.'; return; }
+
+  const body = {id, name, username};
+  if (password) body.password = password;
+
+  const res = await post('update_user', body);
+  if (res.ok) {
+    msg.style.color = 'var(--green)';
+    msg.textContent = '✅ Saved!';
+    // Update local cache
+    const u = allUsers.find(x => x.id == id);
+    if (u) { u.name = name; u.username = username; }
+    loadSettings();
+    renderUserTabs();
+    setTimeout(closeEditUser, 800);
+  } else {
+    msg.style.color = 'var(--red)';
+    msg.textContent = res.error || 'Error saving.';
+  }
 }
 
 function renderUserTabs() {

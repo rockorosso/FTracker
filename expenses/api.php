@@ -33,6 +33,7 @@ switch ($action) {
     case 'extract':        doExtract($body);             break;
     case 'report':         doReport($pdo);               break;
     case 'users':          doUsers($pdo);                break;
+    case 'update_user':    doUpdateUser($pdo, $body);     break;
     case 'download_zip':   doDownloadZip($pdo);          break;
     default: http_response_code(400); echo json_encode(['error' => 'Unknown action']);
 }
@@ -282,6 +283,36 @@ function doUsers($pdo) {
     if (!isAdmin()) err('Admin only', 403);
     $rows = $pdo->query('SELECT id, username, name, role FROM users ORDER BY role, name')->fetchAll();
     ok(['users' => $rows]);
+}
+
+// ── Update user (admin only) ───────────────────────────────────
+function doUpdateUser($pdo, $body) {
+    requireAuth();
+    if (!isAdmin()) err('Admin only', 403);
+
+    $id       = intval($body['id'] ?? 0);
+    $name     = trim($body['name']     ?? '');
+    $username = trim($body['username'] ?? '');
+    $password = $body['password'] ?? '';
+
+    if (!$id)       err('ID required');
+    if (!$name)     err('Name required');
+    if (!$username) err('Username required');
+
+    // Check username not taken by another user
+    $stmt = $pdo->prepare('SELECT id FROM users WHERE username = ? AND id != ?');
+    $stmt->execute([$username, $id]);
+    if ($stmt->fetch()) err('Username already taken by another user');
+
+    if ($password) {
+        $hash = password_hash($password, PASSWORD_BCRYPT);
+        $pdo->prepare('UPDATE users SET name = ?, username = ?, password_hash = ? WHERE id = ?')
+            ->execute([$name, $username, $hash, $id]);
+    } else {
+        $pdo->prepare('UPDATE users SET name = ?, username = ? WHERE id = ?')
+            ->execute([$name, $username, $id]);
+    }
+    ok();
 }
 
 // ── Download ZIP (report + original photos) ───────────────────
