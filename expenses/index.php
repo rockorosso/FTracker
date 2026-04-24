@@ -81,6 +81,8 @@ tr:hover td{background:var(--surface2)}
 .b-equipment{background:rgba(188,140,255,.15);color:var(--purple)}
 .b-software{background:rgba(88,166,255,.15);color:var(--blue)}
 .b-food{background:rgba(63,185,80,.15);color:var(--green)}
+.b-accom-work{background:rgba(88,166,255,.15);color:#1a7fc1}
+.b-accom-ent{background:rgba(255,100,150,.15);color:#c0396b}
 .b-other{background:rgba(125,133,144,.15);color:var(--muted)}
 
 /* ── Photo thumb ── */
@@ -274,6 +276,8 @@ tr:hover td{background:var(--surface2)}
         <select id="m-cat">
           <option value="transport_work">🚗 Transport Work</option>
           <option value="transport_entertainment">🎉 Transport Entertainment</option>
+          <option value="accommodation_work">🏨 Accommodation Work</option>
+          <option value="accommodation_entertainment">🛎 Accommodation Entertainment</option>
           <option value="equipment">🖥 Equipment & Supplies</option>
           <option value="software">💻 Software & Subscriptions</option>
           <option value="other">📋 Other</option>
@@ -318,8 +322,8 @@ const api = (action, opts={}) => fetch(`api.php?action=${action}`, {method:'GET'
 const post = (action, body) => fetch(`api.php?action=${action}`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}).then(r=>r.json());
 const monthLabel = m => { const [y,mo]=m.split('-'); return new Date(+y,+mo-1,1).toLocaleString('en',{month:'long',year:'numeric'}); };
 const fm = (v,cur='EUR') => new Intl.NumberFormat('en-US',{style:'currency',currency:cur,minimumFractionDigits:2}).format(v);
-const catLabel = {'transport_work':'🚗 Transport Work','transport_entertainment':'🎉 Transport Entert.','equipment':'🖥 Equipment','software':'💻 Software','other':'📋 Other'};
-const catClass = {'transport_work':'b-travel','transport_entertainment':'b-food','equipment':'b-equipment','software':'b-software','other':'b-other'};
+const catLabel = {'transport_work':'🚗 Transport Work','transport_entertainment':'🎉 Transport Entert.','accommodation_work':'🏨 Accommodation Work','accommodation_entertainment':'🛎 Accommodation Entert.','equipment':'🖥 Equipment','software':'💻 Software','other':'📋 Other'};
+const catClass = {'transport_work':'b-travel','transport_entertainment':'b-food','accommodation_work':'b-accom-work','accommodation_entertainment':'b-accom-ent','equipment':'b-equipment','software':'b-software','other':'b-other'};
 
 // ── Init ───────────────────────────────────────────────────────
 (async () => {
