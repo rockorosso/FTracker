@@ -219,6 +219,7 @@ tr:hover td{background:var(--surface2)}
             <button onclick="changeMonth(1)">›</button>
           </div>
           <button class="btn-s" onclick="exportCSV()">⬇ Export CSV</button>
+          <button class="btn-s" onclick="downloadZip()">📦 Download ZIP</button>
           <button class="btn-s" onclick="window.print()">🖨 Print</button>
         </div>
       </div>
@@ -552,6 +553,13 @@ function exportCSV() {
   a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
   a.download = `expenses_${currentMonth}.csv`;
   a.click();
+}
+
+// ── ZIP Download ───────────────────────────────────────────────
+function downloadZip() {
+  const params = new URLSearchParams({action: 'download_zip', month: currentMonth});
+  if (filterUserId) params.set('user_id', filterUserId);
+  window.location.href = 'api.php?' + params.toString();
 }
 
 // ── Modal ──────────────────────────────────────────────────────

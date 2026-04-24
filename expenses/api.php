@@ -33,6 +33,7 @@ switch ($action) {
     case 'extract':        doExtract($body);             break;
     case 'report':         doReport($pdo);               break;
     case 'users':          doUsers($pdo);                break;
+    case 'download_zip':   doDownloadZip($pdo);          break;
     default: http_response_code(400); echo json_encode(['error' => 'Unknown action']);
 }
 
@@ -281,4 +282,115 @@ function doUsers($pdo) {
     if (!isAdmin()) err('Admin only', 403);
     $rows = $pdo->query('SELECT id, username, name, role FROM users ORDER BY role, name')->fetchAll();
     ok(['users' => $rows]);
+}
+
+// ── Download ZIP (report + original photos) ───────────────────
+function doDownloadZip($pdo) {
+    requireAuth();
+    $month   = $_GET['month'] ?? date('Y-m');
+    $user_id = $_GET['user_id'] ?? null;
+
+    $sql = 'SELECT e.*, u.name as user_name
+            FROM expenses e JOIN users u ON e.user_id = u.id
+            WHERE DATE_FORMAT(e.date, "%Y-%m") = ?';
+    $params = [$month];
+    if (!isAdmin()) {
+        $sql .= ' AND e.user_id = ?';
+        $params[] = $_SESSION['user_id'];
+    } elseif ($user_id) {
+        $sql .= ' AND e.user_id = ?';
+        $params[] = $user_id;
+    }
+    $sql .= ' ORDER BY e.date DESC, e.created_at DESC';
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $rows = $stmt->fetchAll();
+
+    if (!class_exists('ZipArchive')) {
+        http_response_code(500);
+        echo json_encode(['error' => 'ZipArchive not available on this server']);
+        exit;
+    }
+
+    $tmpFile = tempnam(sys_get_temp_dir(), 'expenses_') . '.zip';
+    $zip = new ZipArchive();
+    if ($zip->open($tmpFile, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Could not create ZIP file']);
+        exit;
+    }
+
+    // Category labels
+    $catLabels = [
+        'transport_work'             => 'Transport Work',
+        'transport_entertainment'    => 'Transport Entertainment',
+        'accommodation_work'         => 'Accommodation Work',
+        'accommodation_entertainment'=> 'Accommodation Entertainment',
+        'equipment'                  => 'Equipment & Supplies',
+        'software'                   => 'Software & Subscriptions',
+        'other'                      => 'Other',
+    ];
+
+    // Build CSV
+    $csvRows = [];
+    $isAdmin = isAdmin();
+    $headers = ['Date', 'Company', 'Category', 'Amount', 'Currency', 'Note'];
+    if ($isAdmin) $headers[] = 'User';
+    $headers[] = 'Attachment';
+    $csvRows[] = $headers;
+
+    $total = 0;
+    foreach ($rows as $r) {
+        $total += floatval($r['amount']);
+        $photoName = $r['photo_filename'] ? 'attachments/' . $r['photo_filename'] : '';
+        $row = [
+            $r['date'],
+            $r['company'] ?? '',
+            $catLabels[$r['category']] ?? $r['category'],
+            number_format(floatval($r['amount']), 2, '.', ''),
+            $r['currency'],
+            $r['note'] ?? '',
+        ];
+        if ($isAdmin) $row[] = $r['user_name'];
+        $row[] = $photoName;
+        $csvRows[] = $row;
+    }
+    // Totals row
+    $totalsRow = array_fill(0, count($headers), '');
+    $totalsRow[0] = 'TOTAL';
+    $totalsRow[3] = number_format($total, 2, '.', '');
+    $csvRows[] = $totalsRow;
+
+    $csv = implode("\n", array_map(function($row) {
+        return implode(',', array_map(function($v) {
+            return '"' . str_replace('"', '""', $v) . '"';
+        }, $row));
+    }, $csvRows));
+
+    $zip->addFromString('expenses_' . $month . '.csv', "\xEF\xBB\xBF" . $csv); // UTF-8 BOM for Excel
+
+    // Add attachments at original quality
+    $added = [];
+    foreach ($rows as $r) {
+        if ($r['photo_filename'] && !in_array($r['photo_filename'], $added)) {
+            $path = UPLOAD_DIR . $r['photo_filename'];
+            if (file_exists($path)) {
+                $zip->addFile($path, 'attachments/' . $r['photo_filename']);
+                $added[] = $r['photo_filename'];
+            }
+        }
+    }
+
+    $zip->close();
+
+    // Stream ZIP to browser
+    $zipName = 'expenses_' . $month . '.zip';
+    header('Content-Type: application/zip');
+    header('Content-Disposition: attachment; filename="' . $zipName . '"');
+    header('Content-Length: ' . filesize($tmpFile));
+    header('Cache-Control: no-cache');
+    readfile($tmpFile);
+    unlink($tmpFile);
+    exit;
 }
