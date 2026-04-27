@@ -193,9 +193,20 @@ function doUploadPhoto($pdo) {
     $row = $stmt->fetch();
     if (!$row || ($row['user_id'] != $_SESSION['user_id'] && !isAdmin())) err('Not allowed', 403);
 
-    if (empty($_FILES['photo'])) err('No file uploaded');
+    if (empty($_FILES['photo'])) err('No file received by server (check PHP upload_max_filesize)');
     $file = $_FILES['photo'];
-    if ($file['error'] !== UPLOAD_ERR_OK) err('Upload error: ' . $file['error']);
+    $uploadErrors = [
+        UPLOAD_ERR_INI_SIZE   => 'File exceeds server upload limit (upload_max_filesize)',
+        UPLOAD_ERR_FORM_SIZE  => 'File exceeds form size limit',
+        UPLOAD_ERR_PARTIAL    => 'File was only partially uploaded',
+        UPLOAD_ERR_NO_FILE    => 'No file was uploaded',
+        UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
+        UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+        UPLOAD_ERR_EXTENSION  => 'Upload blocked by server extension',
+    ];
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        err($uploadErrors[$file['error']] ?? 'Upload error code: ' . $file['error']);
+    }
 
     $allowed = ['image/jpeg','image/png','image/webp','image/gif','application/pdf'];
     $mime = mime_content_type($file['tmp_name']);

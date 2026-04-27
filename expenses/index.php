@@ -826,7 +826,24 @@ async function saveExpense() {
     const fd = new FormData();
     fd.append('expense_id', id);
     fd.append('photo', photoFile);
-    await fetch('api.php?action=upload_photo', {method:'POST', body:fd});
+    try {
+      const upRes = await fetch('api.php?action=upload_photo', {
+        method: 'POST',
+        credentials: 'same-origin',
+        body: fd
+      });
+      if (!upRes.ok) {
+        const err = await upRes.json().catch(() => ({}));
+        alert('⚠️ Expense saved, but photo upload failed: ' + (err.error || 'HTTP ' + upRes.status) + '\nYou can re-attach the photo by editing the expense.');
+      } else {
+        const upJson = await upRes.json().catch(() => ({}));
+        if (upJson.error) {
+          alert('⚠️ Expense saved, but photo upload failed: ' + upJson.error + '\nYou can re-attach the photo by editing the expense.');
+        }
+      }
+    } catch (e) {
+      alert('⚠️ Expense saved, but photo upload failed (network error). You can re-attach the photo by editing the expense.');
+    }
   }
 
   closeModal();
