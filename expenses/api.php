@@ -209,19 +209,27 @@ function doUploadPhoto($pdo) {
     }
 
     $allowed = ['image/jpeg','image/png','image/webp','image/gif','application/pdf'];
-    $mime = mime_content_type($file['tmp_name']);
-    // Fallback: mime_content_type() misidentifies PDFs on some servers —
-    // verify using the PDF magic bytes (%PDF) and extension instead
-    if (!in_array($mime, $allowed)) {
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        if ($ext === 'pdf') {
-            $fh = fopen($file['tmp_name'], 'rb');
-            $magic = fread($fh, 4);
-            fclose($fh);
-            if ($magic === '%PDF') $mime = 'application/pdf';
-        }
+
+    // Read first 4 bytes to detect file type by magic bytes (reliable, server-independent)
+    $fh = fopen($file['tmp_name'], 'rb');
+    $magic = fread($fh, 4);
+    fclose($fh);
+
+    if ($magic === '%PDF') {
+        $mime = 'application/pdf';
+    } elseif (substr($magic, 0, 2) === "\xFF\xD8") {
+        $mime = 'image/jpeg';
+    } elseif ($magic === "\x89PNG") {
+        $mime = 'image/png';
+    } elseif ($magic === 'RIFF' || $magic === 'WEBP') {
+        $mime = 'image/webp';
+    } elseif ($magic === 'GIF8') {
+        $mime = 'image/gif';
+    } else {
+        $mime = mime_content_type($file['tmp_name']); // fallback
     }
-    if (!in_array($mime, $allowed)) err('Invalid file type (images and PDFs only). Detected: ' . $mime);
+
+    if (!in_array($mime, $allowed)) err('Invalid file type. Only images (JPEG, PNG, WebP, GIF) and PDFs are allowed.');
     if ($file['size'] > 10 * 1024 * 1024) err('File too large (max 10MB)');
 
     // Delete old photo

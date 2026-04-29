@@ -21,7 +21,6 @@ jobs:
           FTP_PASS: ${{ secrets.FTP_PASS }}
         run: |
           # Get list of files changed in this commit
-          # Fall back to all tracked files if there's only one commit (first deploy)
           if git rev-parse HEAD~1 > /dev/null 2>&1; then
             CHANGED=$(git diff --name-only HEAD~1 HEAD)
           else
@@ -30,6 +29,8 @@ jobs:
 
           echo "Files to deploy:"
           echo "$CHANGED"
+
+          FAILED=0
 
           for file in $CHANGED; do
             # Skip sensitive / excluded files
@@ -42,11 +43,21 @@ jobs:
 
             if [ -f "$file" ]; then
               echo "Uploading: $file"
-              curl --retry 3 --ftp-create-dirs --silent --show-error \
+              if ! curl --retry 3 --ftp-create-dirs --silent --show-error \
                 -T "$file" \
                 "ftp://$FTP_HOST/public_html/$file" \
-                --user "$FTP_USER:$FTP_PASS"
+                --user "$FTP_USER:$FTP_PASS"; then
+                echo "ERROR: Failed to upload $file"
+                FAILED=1
+              else
+                echo "OK: $file"
+              fi
             fi
           done
+
+          if [ $FAILED -ne 0 ]; then
+            echo "One or more files failed to upload!"
+            exit 1
+          fi
 
           echo "Deploy complete."
