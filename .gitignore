@@ -1,5 +1,6 @@
 # Never commit sensitive config or server data
 expenses/reset_gabriel.php
+expenses/diag.php
 expenses/config.php
 data.json
 config.json
