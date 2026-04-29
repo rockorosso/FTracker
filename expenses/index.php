@@ -96,8 +96,14 @@ tr:hover td{background:var(--surface2)}
 .b-other{background:rgba(125,133,144,.15);color:var(--muted)}
 
 /* ── Photo thumb ── */
-.thumb{width:44px;height:44px;border-radius:6px;object-fit:cover;cursor:pointer;border:1px solid var(--border)}
-.thumb-placeholder{width:44px;height:44px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--muted);cursor:pointer}
+.thumb{width:52px;height:52px;border-radius:8px;object-fit:cover;cursor:pointer;border:1px solid var(--border);display:block;transition:opacity .15s}
+.thumb:hover{opacity:.8}
+.thumb-placeholder{width:52px;height:52px;border-radius:8px;background:var(--surface2);border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--muted);cursor:pointer;transition:border-color .15s,background .15s}
+.thumb-placeholder:hover{border-color:var(--accent);background:var(--surface3)}
+.thumb-pdf{width:52px;height:52px;border-radius:8px;background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:1px;transition:opacity .15s}
+.thumb-pdf:hover{opacity:.8}
+.thumb-pdf span:first-child{font-size:22px;line-height:1}
+.thumb-pdf span:last-child{font-size:9px;color:var(--muted);font-weight:600;letter-spacing:.5px}
 
 /* ── Modal ── */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
@@ -567,11 +573,16 @@ async function loadExpenses() {
 
 function expRow(e, showUser, compact) {
   const isPDF = e.photo_url && e.photo_url.toLowerCase().endsWith('.pdf');
-  const photo = e.photo_url
-    ? (isPDF
-        ? `<div class="thumb-placeholder" onclick="window.open('${e.photo_url}','_blank')" title="View PDF" style="cursor:pointer">📄</div>`
-        : `<img class="thumb" src="${e.photo_url}" onclick="openLightbox('${e.photo_url}')" alt="receipt">`)
-    : `<div class="thumb-placeholder" style="cursor:default">—</div>`;
+  let photo;
+  if (e.photo_url && isPDF) {
+    photo = `<div class="thumb-pdf" onclick="window.open('${e.photo_url}','_blank')" title="View PDF">
+      <span>📄</span><span>PDF</span></div>`;
+  } else if (e.photo_url) {
+    photo = `<img class="thumb" src="${e.photo_url}" onclick="openLightbox('${e.photo_url}')" alt="receipt"
+      onerror="this.outerHTML='<div class=\\'thumb-placeholder\\' onclick=\\'openModal(${e.id})\\' title=\\'Photo missing — tap to re-attach\\'>⚠️</div>'">`;
+  } else {
+    photo = `<div class="thumb-placeholder" onclick="openModal(${e.id})" title="Tap to add photo">📷</div>`;
+  }
   const userTd = showUser ? `<td>${e.user_name||''}</td>` : '';
   const actions = compact ? '' : `<td><button class="btn-s" style="margin-right:4px" onclick="openModal(${e.id})">✏️</button><button class="btn-d" onclick="deleteExpense(${e.id})">✕</button></td>`;
   const noteTd = `<td style="color:var(--muted);font-size:12px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.note||''}</td>`;
