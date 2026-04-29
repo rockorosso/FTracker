@@ -210,7 +210,18 @@ function doUploadPhoto($pdo) {
 
     $allowed = ['image/jpeg','image/png','image/webp','image/gif','application/pdf'];
     $mime = mime_content_type($file['tmp_name']);
-    if (!in_array($mime, $allowed)) err('Invalid file type (images and PDFs only)');
+    // Fallback: mime_content_type() misidentifies PDFs on some servers —
+    // verify using the PDF magic bytes (%PDF) and extension instead
+    if (!in_array($mime, $allowed)) {
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        if ($ext === 'pdf') {
+            $fh = fopen($file['tmp_name'], 'rb');
+            $magic = fread($fh, 4);
+            fclose($fh);
+            if ($magic === '%PDF') $mime = 'application/pdf';
+        }
+    }
+    if (!in_array($mime, $allowed)) err('Invalid file type (images and PDFs only). Detected: ' . $mime);
     if ($file['size'] > 10 * 1024 * 1024) err('File too large (max 10MB)');
 
     // Delete old photo
