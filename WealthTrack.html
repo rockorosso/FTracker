@@ -762,12 +762,19 @@ const CURRENCIES=['EUR','USD','ARS','CZK','GBP','CHF','PLN','HUF','SEK','NOK','D
 function clone(o){return JSON.parse(JSON.stringify(o))}
 function loadState(){
   try{
-    // Prefer data embedded in the file (works across all browsers)
-    if(window.__WT_DATA__ && typeof window.__WT_DATA__==='object' && Object.keys(window.__WT_DATA__).length>0){
-      S=window.__WT_DATA__;fixKeys();return;
+    const serverData=window.__WT_DATA__;
+    const localRaw=localStorage.getItem('wt_v3');
+    const localData=localRaw?JSON.parse(localRaw):null;
+    // Use whichever copy was saved most recently
+    const serverTs=(serverData&&serverData._savedAt)||0;
+    const localTs=(localData&&localData._savedAt)||0;
+    if(localData&&localTs>serverTs){
+      S=localData;fixKeys();return;
     }
-    // Fall back to localStorage
-    const s=localStorage.getItem('wt_v3');if(s){S=JSON.parse(s);fixKeys();}else S=clone(DEFAULTS);
+    if(serverData&&typeof serverData==='object'&&Object.keys(serverData).length>0){
+      S=serverData;fixKeys();return;
+    }
+    if(localData){S=localData;fixKeys();}else S=clone(DEFAULTS);
   }catch(e){S=clone(DEFAULTS);}
 }
 function fixKeys(){
@@ -807,10 +814,11 @@ function fixKeys(){
   });
 }
 function save(){
+  S._savedAt=Date.now();
   localStorage.setItem('wt_v3',JSON.stringify(S));
-  // Persist to file via server so all browsers always have the latest data
   fetch('save.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:S})})
-    .catch(()=>{});// silent if server not running
+    .then(r=>r.json()).then(j=>{if(j.error)console.error('WealthTrack save failed:',j.error);})
+    .catch(()=>{});
 }
 
 // ═══════════════════════════════════════════════════════════

@@ -41,7 +41,12 @@ if (array_key_exists('data', $payload) && $payload['data'] !== null) {
         echo json_encode(['error' => 'Failed to encode data']);
         exit;
     }
-    file_put_contents($dataFile, $encoded, LOCK_EX);
+    $result = file_put_contents($dataFile, $encoded, LOCK_EX);
+    if ($result === false) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to write data.json — check file permissions']);
+        exit;
+    }
 }
 
 // ── Save credentials (passHash, userHash, contUserHash, contPassHash) ──
