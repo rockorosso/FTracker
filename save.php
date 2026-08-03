@@ -32,6 +32,19 @@ if (!is_array($payload)) {
 
 $dataFile   = __DIR__ . '/data.json';
 $configFile = __DIR__ . '/config.json';
+$htmlFile   = __DIR__ . '/WealthTrack.html';
+
+// ── Deploy HTML (self-update mechanism) ───────────────────────
+if (array_key_exists('html', $payload) && is_string($payload['html']) && strlen($payload['html']) > 10000) {
+    $result = file_put_contents($htmlFile, $payload['html'], LOCK_EX);
+    if ($result === false) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to write WealthTrack.html']);
+        exit;
+    }
+    echo json_encode(['ok' => true, 'html_bytes' => $result]);
+    exit;
+}
 
 // ── Save main app data ─────────────────────────────────────────
 if (array_key_exists('data', $payload) && $payload['data'] !== null) {
