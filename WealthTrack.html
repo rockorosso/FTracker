@@ -354,11 +354,13 @@ body.contractor-mode #main{margin-left:0}
 <!-- REVOLUT ────────────────────────────────── -->
 <div id="page-revolut" class="page">
   <div class="ph"><div class="pt">💎 Revolut</div>
-    <div style="display:flex;gap:8px"><button class="btn-p" onclick="openModal('revolut_gold')">+ Gold Purchase</button><button class="btn-s" onclick="openModal('revolut_cash')">+ Cash</button></div>
+    <div style="display:flex;gap:8px"><button class="btn-p" onclick="openModal('revolut_gold')">+ Gold Purchase</button><button class="btn-p" onclick="openModal('revolut_silver')" style="background:#a0a0b0">+ Silver Purchase</button><button class="btn-s" onclick="openModal('revolut_cash')">+ Cash</button></div>
   </div>
   <div class="cards" id="c-revolut"></div>
   <div class="tb"><div class="tbh"><span class="tbt">Gold Vault (XAU)</span><span class="pna" id="u-gold"></span></div>
   <div class="tbr"><table><thead><tr><th>Oz</th><th>Paid (EUR/oz)</th><th>Paid (USD/oz)</th><th>Invested (EUR)</th><th>Date</th><th>Current Value (EUR)</th><th>P&amp;L (EUR)</th><th>P&amp;L %</th><th></th></tr></thead><tbody id="t-rgold"></tbody></table></div></div>
+  <div class="tb"><div class="tbh"><span class="tbt">Silver Vault (XAG)</span><span class="pna" id="u-silver"></span></div>
+  <div class="tbr"><table><thead><tr><th>Oz</th><th>Paid (EUR/oz)</th><th>Paid (USD/oz)</th><th>Invested (EUR)</th><th>Date</th><th>Current Value (EUR)</th><th>P&amp;L (EUR)</th><th>P&amp;L %</th><th></th></tr></thead><tbody id="t-rsilver"></tbody></table></div></div>
   <div class="tb"><div class="tbh"><span class="tbt">Cash Holdings</span></div>
   <div class="tbr"><table><thead><tr><th>Currency</th><th>Amount</th><th>Value (EUR)</th><th></th></tr></thead><tbody id="t-rcash"></tbody></table></div></div>
 </div>
@@ -727,6 +729,7 @@ const DEFAULTS = {
       {id:'rg2',units:2,priceEUR:3776.70,priceUSD:null,   totalEUR:7553.40,date:'2026-01-02'},
       {id:'rg3',units:1,priceEUR:3893.47,priceUSD:4519.00,totalEUR:3893.47,date:'2026-03-23'}
     ],
+    revolut_silver:[],
     revolut_cash:[],
     brubank:[
       {id:'bb3',name:'Brubank Stock YPF',type:'stock_ars', qty:18,costARS:972000, curARS:1092150,valueUSD:782,   valueEUR:673.28, date:'2026-03-06',note:''},
@@ -756,7 +759,7 @@ const DEFAULTS = {
 let S={}, MC={account:null,editId:null}, CH={};
 let currentRole='owner'; // 'owner' | 'contractor'
 let _contPreview=false;
-const ALL_ACCS=['kraken','exodus','whitebit','wb_fixed','etoro','ibrk','realestate','revolut_gold','revolut_cash','brubank','cash','docta'];
+const ALL_ACCS=['kraken','exodus','whitebit','wb_fixed','etoro','ibrk','realestate','revolut_gold','revolut_silver','revolut_cash','brubank','cash','docta'];
 const CURRENCIES=['EUR','USD','ARS','CZK','GBP','CHF','PLN','HUF','SEK','NOK','DKK','BRL','CLP','MXN','CAD','JPY','AUD'];
 
 function clone(o){return JSON.parse(JSON.stringify(o))}
@@ -888,10 +891,17 @@ function goldVal(){
   valEUR=gp_!=null?gp_*units:invEUR;
   return{valEUR,invEUR,units,priceEUR:gp_};
 }
+function silverVal(){
+  const sp_=gp('XAG','eur')||gp('SI=F','usd')/S.rates.eurUsd||null;
+  let invEUR=0,units=0,valEUR=0;
+  (S.accounts.revolut_silver||[]).forEach(p=>{invEUR+=p.totalEUR;units+=p.units;});
+  valEUR=sp_!=null?sp_*units:invEUR;
+  return{valEUR,invEUR,units,priceEUR:sp_};
+}
 function revolutVal(){
-  const g=goldVal();let cashEUR=0;
+  const g=goldVal();const sv=silverVal();let cashEUR=0;
   (S.accounts.revolut_cash||[]).forEach(c=>cashEUR+=anyToEUR(c.amount,c.currency));
-  return{eur:g.valEUR+cashEUR,invEUR:g.invEUR+cashEUR,goldEUR:g.valEUR,cashEUR};
+  return{eur:g.valEUR+sv.valEUR+cashEUR,invEUR:g.invEUR+sv.invEUR+cashEUR,goldEUR:g.valEUR,silverEUR:sv.valEUR,cashEUR};
 }
 // Helper: compute rental metrics for a single property (respects ownershipPct)
 function rentalMetrics(p){
@@ -1141,6 +1151,7 @@ function renderAllocCharts(w){
     {l:'Stocks/ETFs', v:stocksEUR,     c:'#3fb950'},
     {l:'Real Estate', v:re.eur,        c:'#bc8cff'},
     {l:'Gold',        v:goldEUR,       c:'#d29922'},
+    {l:'Silver',      v:silverVal().valEUR, c:'#a8a8b8'},
     {l:'Stocks (ARS)',v:arsStocksEUR,  c:'#58a6ff'},
     {l:'Cash',        v:cashEUR,       c:'#7d8590'},
     {l:'Business',    v:w.parts.dt.eur,c:'#f0a3ff'}
@@ -1446,21 +1457,38 @@ function renderRealEstate(){
 // RENDER REVOLUT
 // ═══════════════════════════════════════════════════════════
 function renderRevolut(){
-  const gv=goldVal();
-  const upd=document.getElementById('u-gold');
-  if(upd)upd.textContent=gv.priceEUR?`Gold: ${fm(gv.priceEUR)}/oz · ${ageStr(S.prices['XAU']?.ts||S.prices['GC=F']?.ts)}`:'Gold price not loaded';
-  let tInv=0,tVal=0,tUnits=0;
+  const gv=goldVal();const sv=silverVal();
+  // Gold table
+  const updG=document.getElementById('u-gold');
+  if(updG)updG.textContent=gv.priceEUR?`Gold: ${fm(gv.priceEUR)}/oz · ${ageStr(S.prices['XAU']?.ts||S.prices['GC=F']?.ts)}`:'Gold price not loaded';
+  let gInv=0,gVal=0,gUnits=0;
   const gHtml=(S.accounts.revolut_gold||[]).map(p=>{
     const cur=gv.priceEUR!=null?gv.priceEUR*p.units:null;
     const pnl=cur!=null?cur-p.totalEUR:null,pct=(pnl!=null&&p.totalEUR>0)?(pnl/p.totalEUR)*100:null;
-    tInv+=p.totalEUR;tUnits+=p.units;if(cur)tVal+=cur;
+    gInv+=p.totalEUR;gUnits+=p.units;if(cur)gVal+=cur;
     return`<tr><td>${fn(p.units,4)} oz</td><td>${p.priceEUR?fm(p.priceEUR):'—'}</td><td>${p.priceUSD?fm(p.priceUSD,'USD'):'—'}</td>
       <td>${fm(p.totalEUR)}</td><td>${p.date||'—'}</td>
       <td><strong>${cur!=null?fm(cur):'<span class="pna">No price</span>'}</strong></td>
       <td class="${pc(pnl)}">${pnl!=null?fm(pnl):'—'}</td><td class="${pc(pct)}">${pct!=null?fp(pct):'—'}</td>
       <td><button class="btn-s" onclick="openModal('revolut_gold','${p.id}')">Edit</button> <button class="btn-d" onclick="del('revolut_gold','${p.id}')">✕</button></td></tr>`;
   }).join('');
-  document.getElementById('t-rgold').innerHTML=gHtml+`<tr class="tr-total"><td><strong>${fn(tUnits,4)} oz</strong></td><td colspan="2"></td><td><strong>${fm(tInv)}</strong></td><td></td><td><strong>${fm(tVal||tInv)}</strong></td><td class="${pc(tVal-tInv)}"><strong>${fm(tVal-tInv)}</strong></td><td></td><td></td></tr>`;
+  document.getElementById('t-rgold').innerHTML=gHtml+`<tr class="tr-total"><td><strong>${fn(gUnits,4)} oz</strong></td><td colspan="2"></td><td><strong>${fm(gInv)}</strong></td><td></td><td><strong>${fm(gVal||gInv)}</strong></td><td class="${pc(gVal-gInv)}"><strong>${fm(gVal-gInv)}</strong></td><td></td><td></td></tr>`;
+  // Silver table
+  const updS=document.getElementById('u-silver');
+  if(updS)updS.textContent=sv.priceEUR?`Silver: ${fm(sv.priceEUR)}/oz · ${ageStr(S.prices['XAG']?.ts||S.prices['SI=F']?.ts)}`:'Silver price not loaded';
+  let sInv=0,sVal=0,sUnits=0;
+  const sHtml=(S.accounts.revolut_silver||[]).map(p=>{
+    const cur=sv.priceEUR!=null?sv.priceEUR*p.units:null;
+    const pnl=cur!=null?cur-p.totalEUR:null,pct=(pnl!=null&&p.totalEUR>0)?(pnl/p.totalEUR)*100:null;
+    sInv+=p.totalEUR;sUnits+=p.units;if(cur)sVal+=cur;
+    return`<tr><td>${fn(p.units,4)} oz</td><td>${p.priceEUR?fm(p.priceEUR):'—'}</td><td>${p.priceUSD?fm(p.priceUSD,'USD'):'—'}</td>
+      <td>${fm(p.totalEUR)}</td><td>${p.date||'—'}</td>
+      <td><strong>${cur!=null?fm(cur):'<span class="pna">No price</span>'}</strong></td>
+      <td class="${pc(pnl)}">${pnl!=null?fm(pnl):'—'}</td><td class="${pc(pct)}">${pct!=null?fp(pct):'—'}</td>
+      <td><button class="btn-s" onclick="openModal('revolut_silver','${p.id}')">Edit</button> <button class="btn-d" onclick="del('revolut_silver','${p.id}')">✕</button></td></tr>`;
+  }).join('')||'<tr><td colspan="9" class="empty-st">No silver entries yet</td></tr>';
+  document.getElementById('t-rsilver').innerHTML=sHtml+(sUnits>0?`<tr class="tr-total"><td><strong>${fn(sUnits,4)} oz</strong></td><td colspan="2"></td><td><strong>${fm(sInv)}</strong></td><td></td><td><strong>${fm(sVal||sInv)}</strong></td><td class="${pc(sVal-sInv)}"><strong>${fm(sVal-sInv)}</strong></td><td></td><td></td></tr>`:'');
+  // Cash table
   let tCash=0;
   const cHtml=(S.accounts.revolut_cash||[]).map(c=>{
     const v=anyToEUR(c.amount,c.currency);tCash+=v;
@@ -1468,12 +1496,15 @@ function renderRevolut(){
       <td><button class="btn-s" onclick="openModal('revolut_cash','${c.id}')">Edit</button> <button class="btn-d" onclick="del('revolut_cash','${c.id}')">✕</button></td></tr>`;
   }).join('')||'<tr><td colspan="4" class="empty-st">No cash entries yet</td></tr>';
   document.getElementById('t-rcash').innerHTML=cHtml;
-  const tot=(tVal||tInv)+tCash;
+  const tot=(gVal||gInv)+(sVal||sInv)+tCash;
   document.getElementById('c-revolut').innerHTML=`
     <div class="card"><div class="cl">Total Value</div><div class="cv">${fm(tot)}</div></div>
-    <div class="card"><div class="cl">Gold</div><div class="cv">${fn(tUnits,4)} oz</div><div class="cs">${fm(tVal||tInv)}</div></div>
-    <div class="card"><div class="cl">Gold P&amp;L</div><div class="cv ${pc(tVal-tInv)}">${fm(tVal-tInv)}</div></div>
-    <div class="card"><div class="cl">Gold Price</div><div class="cv">${gv.priceEUR?fm(gv.priceEUR):'—'}</div><div class="cs">per troy oz</div></div>`;
+    <div class="card"><div class="cl">Gold</div><div class="cv">${fn(gUnits,4)} oz</div><div class="cs">${fm(gVal||gInv)}</div></div>
+    <div class="card"><div class="cl">Gold P&amp;L</div><div class="cv ${pc(gVal-gInv)}">${fm(gVal-gInv)}</div></div>
+    <div class="card"><div class="cl">Gold Price</div><div class="cv">${gv.priceEUR?fm(gv.priceEUR):'—'}</div><div class="cs">per troy oz</div></div>
+    ${sUnits>0||sv.priceEUR?`<div class="card"><div class="cl">Silver</div><div class="cv">${fn(sUnits,4)} oz</div><div class="cs">${fm(sVal||sInv)}</div></div>
+    <div class="card"><div class="cl">Silver P&amp;L</div><div class="cv ${pc(sVal-sInv)}">${fm(sVal-sInv)}</div></div>
+    <div class="card"><div class="cl">Silver Price</div><div class="cv">${sv.priceEUR?fm(sv.priceEUR):'—'}</div><div class="cs">per troy oz</div></div>`:''}`;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1835,6 +1866,18 @@ function buildForm(acc,item){
     <div class="fg"><label>Total Invested (EUR) <span class="hint" style="text-transform:none;letter-spacing:0">(auto-calculates if blank)</span></label>
       <input id="f-teur" type="number" step="any" value="${v('totalEUR')}"></div>`;
 
+  if(acc==='revolut_silver')return`
+    <div class="frow">
+      <div class="fg"><label>Units (troy oz)</label><input id="f-units" type="number" step="any" value="${v('units')}"></div>
+      <div class="fg"><label>Date Purchased</label><input id="f-date" type="date" value="${v('date')}"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Purchase Price (EUR/oz)</label><input id="f-peur" type="number" step="any" value="${v('priceEUR')}"></div>
+      <div class="fg"><label>Purchase Price (USD/oz)</label><input id="f-pusd" type="number" step="any" value="${v('priceUSD')}"></div>
+    </div>
+    <div class="fg"><label>Total Invested (EUR) <span class="hint" style="text-transform:none;letter-spacing:0">(auto-calculates if blank)</span></label>
+      <input id="f-teur" type="number" step="any" value="${v('totalEUR')}"></div>`;
+
   if(acc==='revolut_cash')return`
     <div class="frow">
       <div class="fg"><label>Currency</label>${selCur('f-cur',v('currency','EUR'))}</div>
@@ -1997,6 +2040,9 @@ function saveModal(){
   }else if(acc==='revolut_gold'){
     const u=VN('f-units'),pe=VN('f-peur');
     item={id:editId||gid(),units:u,priceEUR:pe||null,priceUSD:VN('f-pusd')||null,totalEUR:VN('f-teur')||pe*u,date:V('f-date')};
+  }else if(acc==='revolut_silver'){
+    const u=VN('f-units'),pe=VN('f-peur');
+    item={id:editId||gid(),units:u,priceEUR:pe||null,priceUSD:VN('f-pusd')||null,totalEUR:VN('f-teur')||pe*u,date:V('f-date')};
   }else if(acc==='revolut_cash'){
     item={id:editId||gid(),currency:V('f-cur'),amount:VN('f-amount')};
   }else if(acc==='brubank'){
@@ -2032,14 +2078,14 @@ function saveModal(){
   const arr=S.accounts[acc];
   if(editId){const i=arr.findIndex(p=>p.id===editId);if(i>=0)arr[i]=item;}else arr.push(item);
   save();closeModal();
-  const PM={kraken:'kraken',exodus:'exodus',whitebit:'whitebit',wb_fixed:'whitebit',etoro:'etoro',ibrk:'ibrk',realestate:'realestate',revolut_gold:'revolut',revolut_cash:'revolut',brubank:'brubank',cash:'cash',docta:'docta'};
+  const PM={kraken:'kraken',exodus:'exodus',whitebit:'whitebit',wb_fixed:'whitebit',etoro:'etoro',ibrk:'ibrk',realestate:'realestate',revolut_gold:'revolut',revolut_silver:'revolut',revolut_cash:'revolut',brubank:'brubank',cash:'cash',docta:'docta'};
   renderPage(PM[acc]||acc);
 }
 
 function del(acc,id){
   if(!confirm('Remove this entry?'))return;
   S.accounts[acc]=S.accounts[acc].filter(p=>p.id!==id);save();
-  const PM={kraken:'kraken',exodus:'exodus',whitebit:'whitebit',wb_fixed:'whitebit',etoro:'etoro',ibrk:'ibrk',realestate:'realestate',revolut_gold:'revolut',revolut_cash:'revolut',brubank:'brubank',cash:'cash',docta:'docta'};
+  const PM={kraken:'kraken',exodus:'exodus',whitebit:'whitebit',wb_fixed:'whitebit',etoro:'etoro',ibrk:'ibrk',realestate:'realestate',revolut_gold:'revolut',revolut_silver:'revolut',revolut_cash:'revolut',brubank:'brubank',cash:'cash',docta:'docta'};
   renderPage(PM[acc]||acc);
 }
 
@@ -2262,8 +2308,9 @@ async function doRefresh(){
   setStatus('ARS stocks…');
   try{await fetchBrubankStocks();ok.push('ars-stocks');}catch(e){rlog('⚠ ARS stocks: '+e.message);}
 
-  setStatus('Gold…');
+  setStatus('Gold & Silver…');
   try{await fetchGoldPrice();ok.push('gold');}catch(e){fail.push('gold');rlog('❌ gold: '+e.message);}
+  try{await fetchSilverPrice();ok.push('silver');}catch(e){rlog('⚠ silver: '+e.message);}
 
   S.lastRefresh=new Date().toISOString();
   S.refreshLog=[..._log];
@@ -2566,6 +2613,29 @@ async function fetchGoldPrice(){
     rlog('✅ Gold via Yahoo GC=F: $'+price.toFixed(2));return;
   }
   rlog('⚠ Gold: all sources failed');
+}
+async function fetchSilverPrice(){
+  // Try metals.live FIRST
+  try{
+    let d=null;
+    try{
+      const r=await Promise.race([fetch('https://api.metals.live/v1/spot/silver',{mode:'cors'}),timed(7000)]);
+      if(r.ok)d=await r.json();
+    }catch(e2){}
+    if(!d)d=await fetchJSON('https://api.metals.live/v1/spot/silver','silver').catch(()=>null);
+    const p=Array.isArray(d)?d[0]?.price:d?.price;
+    if(p&&p>0){
+      S.prices['SI=F']=S.prices['XAG']={usd:p,eur:p/S.rates.eurUsd,ts:Date.now()};
+      rlog('✅ Silver via metals.live: $'+p.toFixed(2));return;
+    }
+  }catch(e){rlog('⚠ Silver metals.live: '+e.message);}
+  // SI=F (silver futures) via Yahoo Finance
+  const price=await fetchYahoo('SI=F');
+  if(price&&price>0){
+    S.prices['SI=F']=S.prices['XAG']={usd:price,eur:price/S.rates.eurUsd,ts:Date.now()};
+    rlog('✅ Silver via Yahoo SI=F: $'+price.toFixed(2));return;
+  }
+  rlog('⚠ Silver: all sources failed');
 }
 
 // ═══════════════════════════════════════════════════════════
