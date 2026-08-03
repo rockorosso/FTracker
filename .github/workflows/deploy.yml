@@ -45,7 +45,7 @@ jobs:
               echo "Uploading: $file"
               if ! curl --retry 3 --ftp-create-dirs --silent --show-error \
                 -T "$file" \
-                "ftp://$FTP_HOST/public_html/$file" \
+                "ftp://$FTP_HOST/$file" \
                 --user "$FTP_USER:$FTP_PASS"; then
                 echo "ERROR: Failed to upload $file"
                 FAILED=1
