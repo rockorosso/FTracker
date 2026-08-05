@@ -1,4 +1,4 @@
-<!DOCTYPE html><!-- WealthTrack v2.6 -->
+<!DOCTYPE html><!-- WealthTrack v2.7 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -114,6 +114,7 @@ button{font-family:inherit;cursor:pointer;border:none;border-radius:6px;font-siz
 
 /* ── Misc ── */
 .pna{color:var(--muted);font-style:italic;font-size:11px}
+.sub{color:var(--muted);font-size:12px}
 .empty-st{padding:28px;text-align:center;color:var(--muted);font-size:12px}
 .spin{display:inline-block;width:11px;height:11px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -362,7 +363,7 @@ body.contractor-mode #main{margin-left:0}
   <div class="tb"><div class="tbh"><span class="tbt">Silver Vault (XAG)</span><span class="pna" id="u-silver"></span></div>
   <div class="tbr"><table><thead><tr><th>Oz</th><th>Paid (EUR/oz)</th><th>Paid (USD/oz)</th><th>Invested (EUR)</th><th>Date</th><th>Current Value (EUR)</th><th>P&amp;L (EUR)</th><th>P&amp;L %</th><th></th></tr></thead><tbody id="t-rsilver"></tbody></table></div></div>
   <div class="tb"><div class="tbh"><span class="tbt">Cash Holdings</span></div>
-  <div class="tbr"><table><thead><tr><th>Currency</th><th>Amount</th><th>Value (EUR)</th><th></th></tr></thead><tbody id="t-rcash"></tbody></table></div></div>
+  <div class="tbr"><table><thead><tr><th>Currency</th><th>Amount</th><th>Value (EUR)</th><th>Last Updated</th><th></th></tr></thead><tbody id="t-rcash"></tbody></table></div></div>
 </div>
 
 <!-- BRUBANK ────────────────────────────────── -->
@@ -378,7 +379,7 @@ body.contractor-mode #main{margin-left:0}
   <div class="ph"><div class="pt">💵 Cash &amp; Banks</div><button class="btn-p" onclick="openModal('cash')">+ Add Entry</button></div>
   <div class="cards" id="c-cash"></div>
   <div class="tb"><div class="tbh"><span class="tbt">Accounts &amp; Cash Holdings</span></div>
-  <div class="tbr"><table><thead><tr><th>Description</th><th>Bank / Location</th><th>Currency</th><th>Amount</th><th>Value (EUR)</th><th></th></tr></thead><tbody id="t-cash"></tbody></table></div></div>
+  <div class="tbr"><table><thead><tr><th>Description</th><th>Bank / Location</th><th>Currency</th><th>Amount</th><th>Value (EUR)</th><th>Last Updated</th><th></th></tr></thead><tbody id="t-cash"></tbody></table></div></div>
 </div>
 
 <!-- DOCTA BUSINESS ─────────────────────────── -->
@@ -1493,8 +1494,9 @@ function renderRevolut(){
   const cHtml=(S.accounts.revolut_cash||[]).map(c=>{
     const v=anyToEUR(c.amount,c.currency);tCash+=v;
     return`<tr><td><span class="badge b-gold">${c.currency}</span></td><td>${fn(c.amount,2)}</td><td>${fm(v)}</td>
+      <td class="sub">${c.updated||'—'}</td>
       <td><button class="btn-s" onclick="openModal('revolut_cash','${c.id}')">Edit</button> <button class="btn-d" onclick="del('revolut_cash','${c.id}')">✕</button></td></tr>`;
-  }).join('')||'<tr><td colspan="4" class="empty-st">No cash entries yet</td></tr>';
+  }).join('')||'<tr><td colspan="5" class="empty-st">No cash entries yet</td></tr>';
   document.getElementById('t-rcash').innerHTML=cHtml;
   const tot=(gVal||gInv)+(sVal||sInv)+tCash;
   document.getElementById('c-revolut').innerHTML=`
@@ -1574,9 +1576,10 @@ function renderCash(){
     return`<tr><td><strong>${c.desc}</strong></td><td>${c.bank||'—'}</td>
       <td><span class="badge b-blue">${c.currency}</span></td><td>${fn(c.amount,2)}</td>
       <td><strong>${fm(v)}</strong></td>
+      <td class="sub">${c.updated||'—'}</td>
       <td><button class="btn-s" onclick="openModal('cash','${c.id}')">Edit</button> <button class="btn-d" onclick="del('cash','${c.id}')">✕</button></td></tr>`;
-  }).join('')||'<tr><td colspan="6" class="empty-st">No cash entries. Add CSOB, Revolut cash, or any bank account here (supports EUR, USD, ARS, CZK…).</td></tr>';
-  document.getElementById('t-cash').innerHTML=html+(rows.length?`<tr class="tr-total"><td colspan="4"><strong>TOTAL</strong></td><td><strong>${fm(tot)}</strong></td><td></td></tr>`:'');
+  }).join('')||'<tr><td colspan="7" class="empty-st">No cash entries. Add CSOB, Revolut cash, or any bank account here (supports EUR, USD, ARS, CZK…).</td></tr>';
+  document.getElementById('t-cash').innerHTML=html+(rows.length?`<tr class="tr-total"><td colspan="4"><strong>TOTAL</strong></td><td><strong>${fm(tot)}</strong></td><td></td><td></td></tr>`:'');
   document.getElementById('c-cash').innerHTML=`
     <div class="card"><div class="cl">Total (EUR)</div><div class="cv">${fm(tot)}</div></div>
     <div class="card"><div class="cl">Entries</div><div class="cv">${rows.length}</div></div>`;
@@ -1882,7 +1885,8 @@ function buildForm(acc,item){
     <div class="frow">
       <div class="fg"><label>Currency</label>${selCur('f-cur',v('currency','EUR'))}</div>
       <div class="fg"><label>Amount</label><input id="f-amount" type="number" step="any" value="${v('amount')}"></div>
-    </div>`;
+    </div>
+    <div class="fg"><label>Last Updated</label><input id="f-updated" type="date" value="${item?.updated||new Date().toISOString().slice(0,10)}"></div>`;
 
   if(acc==='brubank'){
     const type=item?.type||'stock_ars_live';
@@ -1974,7 +1978,8 @@ function buildForm(acc,item){
     <div class="frow">
       <div class="fg"><label>Currency</label>${selCur('f-cur',v('currency','EUR'))}</div>
       <div class="fg"><label>Amount</label><input id="f-amount" type="number" step="any" value="${v('amount')}"></div>
-    </div>`;
+    </div>
+    <div class="fg"><label>Last Updated</label><input id="f-updated" type="date" value="${item?.updated||new Date().toISOString().slice(0,10)}"></div>`;
 
   if(acc==='wb_fixed')return`
     <div class="fg"><label>Name</label><input id="f-name" value="${v('name')}" placeholder="e.g. USDT Fixed Term (1Y)"></div>
@@ -2044,7 +2049,7 @@ function saveModal(){
     const u=VN('f-units'),pe=VN('f-peur');
     item={id:editId||gid(),units:u,priceEUR:pe||null,priceUSD:VN('f-pusd')||null,totalEUR:VN('f-teur')||pe*u,date:V('f-date')};
   }else if(acc==='revolut_cash'){
-    item={id:editId||gid(),currency:V('f-cur'),amount:VN('f-amount')};
+    item={id:editId||gid(),currency:V('f-cur'),amount:VN('f-amount'),updated:V('f-updated')||new Date().toISOString().slice(0,10)};
   }else if(acc==='brubank'){
     const t=V('f-type');
     if(t==='stock_ars_live'){
@@ -2064,7 +2069,7 @@ function saveModal(){
         curARS:VN('f-curars'),valueUSD:VN('f-vusd'),valueEUR:VN('f-veur'),date:V('f-date'),note:V('f-note')};
     }
   }else if(acc==='cash'){
-    item={id:editId||gid(),desc:V('f-desc'),bank:V('f-bank'),currency:V('f-cur'),amount:VN('f-amount')};
+    item={id:editId||gid(),desc:V('f-desc'),bank:V('f-bank'),currency:V('f-cur'),amount:VN('f-amount'),updated:V('f-updated')||new Date().toISOString().slice(0,10)};
   }else if(acc==='wb_fixed'){
     item={id:editId||gid(),name:V('f-name'),principalUSDT:VN('f-principal'),annualRatePct:VN('f-rate'),startDate:V('f-startdate'),termDays:VN('f-termdays')||365,note:V('f-note')};
   }else if(acc==='docta'){
