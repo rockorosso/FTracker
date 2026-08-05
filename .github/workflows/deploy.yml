@@ -67,20 +67,15 @@ jobs:
 
             echo "Deploying via webhook: $file"
 
-            # Build JSON payload with Python (handles large files + special chars safely)
-            payload=$(FILE="$file" DEPLOY_TOKEN="$DEPLOY_TOKEN" python3 -c "
-import json, os
-f = os.environ['FILE']
-t = os.environ['DEPLOY_TOKEN']
-with open(f, 'r', encoding='utf-8') as fh:
-    content = fh.read()
-print(json.dumps({'token': t, 'file': f, 'content': content}))
-")
+            # Build JSON payload (single-line Python to avoid YAML indentation issues)
+            tmpjson=$(mktemp)
+            FILE="$file" DEPLOY_TOKEN="$DEPLOY_TOKEN" python3 -c "import json,os; f=os.environ['FILE']; c=open(f,encoding='utf-8').read(); print(json.dumps({'token':os.environ['DEPLOY_TOKEN'],'file':f,'content':c}))" > "$tmpjson"
 
             response=$(curl -sf -X POST \
               -H "Content-Type: application/json" \
-              --data-binary "$payload" \
+              --data-binary "@$tmpjson" \
               "https://tracker.mydocta.com/_deploy.php" 2>&1)
+            rm -f "$tmpjson"
 
             if [ $? -eq 0 ]; then
               echo "OK: $file — $response"
