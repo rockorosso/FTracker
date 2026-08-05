@@ -14,8 +14,55 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Bootstrap _deploy.php via FTP (new file, creates once)
+      - name: Probe FTP and bootstrap _deploy.php
+        continue-on-error: true
         env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASS: ${{ secrets.FTP_PASS }}
+        run: |
+          echo "===== FTP DIRECTORY LISTING (root) ====="
+          curl --list-only --connect-timeout 20 --max-time 60 \
+            "ftp://$FTP_HOST/" --user "$FTP_USER:$FTP_PASS" || echo "root listing failed"
+
+          echo ""
+          echo "===== FTP DIRECTORY LISTING (public_html/) ====="
+          curl --list-only --connect-timeout 20 --max-time 60 \
+            "ftp://$FTP_HOST/public_html/" --user "$FTP_USER:$FTP_PASS" || echo "public_html listing failed"
+
+          echo ""
+          echo "===== BOOTSTRAP _deploy.php (root path) ====="
+          curl -v --connect-timeout 20 --max-time 120 \
+            -T "_deploy.php" "ftp://$FTP_HOST/_deploy.php" \
+            --user "$FTP_USER:$FTP_PASS" 2>&1 | tail -25 || true
+
+          echo ""
+          echo "===== BOOTSTRAP _deploy.php (public_html path) ====="
+          curl -v --connect-timeout 20 --max-time 120 \
+            -T "_deploy.php" "ftp://$FTP_HOST/public_html/_deploy.php" \
+            --user "$FTP_USER:$FTP_PASS" 2>&1 | tail -25 || true
+
+      - name: Check if webhook is live
+        id: probe
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 \
+            -X POST -H "Content-Type: application/json" \
+            -d '{"token":"x","file":"x"}' \
+            "https://tracker.mydocta.com/_deploy.php" || echo "000")
+          echo "Webhook probe HTTP status: $code"
+          # 403 = script is live and rejecting the bad token (good). 404 = not deployed.
+          if [ "$code" = "403" ] || [ "$code" = "400" ]; then
+            echo "live=true" >> $GITHUB_OUTPUT
+            echo "Webhook IS live."
+          else
+            echo "live=false" >> $GITHUB_OUTPUT
+            echo "Webhook NOT live (status $code) — will use FTP fallback."
+          fi
+
+      - name: Deploy changed files
+        env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+          WEBHOOK_LIVE: ${{ steps.probe.outputs.live }}
           FTP_HOST: ${{ secrets.FTP_HOST }}
           FTP_USER: ${{ secrets.FTP_USER }}
           FTP_PASS: ${{ secrets.FTP_PASS }}
@@ -25,65 +72,62 @@ jobs:
           else
             CHANGED=$(git ls-files)
           fi
-          if echo "$CHANGED" | grep -q '_deploy.php'; then
-            echo "Uploading _deploy.php via FTP..."
-            # FTP root = home dir; public_html/ prefix puts it in the web root
-            curl --silent --show-error \
-              -T "_deploy.php" \
-              "ftp://$FTP_HOST/public_html/_deploy.php" \
-              --user "$FTP_USER:$FTP_PASS" \
-              && echo "OK: _deploy.php" \
-              || echo "WARNING: FTP upload failed (file may already exist — webhook will self-update it)"
-          fi
-
-      - name: Deploy changed files via webhook
-        env:
-          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
-        run: |
-          if git rev-parse HEAD~1 > /dev/null 2>&1; then
-            CHANGED=$(git diff --name-only HEAD~1 HEAD)
-          else
-            CHANGED=$(git ls-files)
-          fi
 
           echo "Files to deploy:"
           echo "$CHANGED"
+          echo "Webhook live: $WEBHOOK_LIVE"
 
           FAILED=0
 
           for file in $CHANGED; do
-            # Skip sensitive / excluded files and _deploy.php (handled by FTP step)
             case "$file" in
-              .git*|.github*|server.py|inject-biz-months.js|data.json|config.json|expenses/config.php|expenses/uploads/*|_deploy.php|"")
+              .git*|.github*|server.py|inject-biz-months.js|data.json|config.json|expenses/config.php|expenses/uploads/*|"")
                 echo "Skipping: $file"
                 continue
                 ;;
             esac
 
-            if [ ! -f "$file" ]; then
-              echo "Skipping (deleted): $file"
-              continue
+            [ -f "$file" ] || { echo "Skipping (deleted): $file"; continue; }
+
+            DEPLOYED=0
+
+            if [ "$WEBHOOK_LIVE" = "true" ]; then
+              echo "--- Webhook deploy: $file"
+              tmpjson=$(mktemp)
+              FILE="$file" DEPLOY_TOKEN="$DEPLOY_TOKEN" python3 -c "import json,os; f=os.environ['FILE']; c=open(f,encoding='utf-8').read(); print(json.dumps({'token':os.environ['DEPLOY_TOKEN'],'file':f,'content':c}))" > "$tmpjson"
+              if response=$(curl -sf --max-time 120 -X POST -H "Content-Type: application/json" --data-binary "@$tmpjson" "https://tracker.mydocta.com/_deploy.php" 2>&1); then
+                echo "OK (webhook): $file — $response"
+                DEPLOYED=1
+              else
+                echo "Webhook failed for $file — falling back to FTP"
+              fi
+              rm -f "$tmpjson"
             fi
 
-            echo "Deploying via webhook: $file"
+            if [ $DEPLOYED -eq 0 ]; then
+              echo "--- FTP deploy (delete-then-upload): $file"
+              # Delete first to work around servers that refuse to overwrite
+              curl --silent --max-time 60 \
+                "ftp://$FTP_HOST/public_html/" --user "$FTP_USER:$FTP_PASS" \
+                -Q "-DELE /public_html/$file" > /dev/null 2>&1 || true
 
-            # Build JSON payload (single-line Python to avoid YAML indentation issues)
-            tmpjson=$(mktemp)
-            FILE="$file" DEPLOY_TOKEN="$DEPLOY_TOKEN" python3 -c "import json,os; f=os.environ['FILE']; c=open(f,encoding='utf-8').read(); print(json.dumps({'token':os.environ['DEPLOY_TOKEN'],'file':f,'content':c}))" > "$tmpjson"
-
-            response=$(curl -sf -X POST \
-              -H "Content-Type: application/json" \
-              --data-binary "@$tmpjson" \
-              "https://tracker.mydocta.com/_deploy.php" 2>&1)
-            rm -f "$tmpjson"
-
-            if [ $? -eq 0 ]; then
-              echo "OK: $file — $response"
-            else
-              echo "ERROR: Failed to deploy $file — $response"
-              FAILED=1
+              if curl --show-error --max-time 180 --ftp-create-dirs \
+                   -T "$file" "ftp://$FTP_HOST/public_html/$file" \
+                   --user "$FTP_USER:$FTP_PASS"; then
+                echo "OK (ftp): $file"
+                DEPLOYED=1
+              else
+                echo "ERROR: FTP also failed for $file"
+                FAILED=1
+              fi
             fi
           done
+
+          echo ""
+          echo "===== VERIFY ====="
+          served=$(curl -s -o /dev/null -w "%{size_download}" "https://tracker.mydocta.com/WealthTrack.html?cb=$RANDOM" || echo 0)
+          localsize=$(wc -c < WealthTrack.html)
+          echo "Server serves: $served bytes | Local file: $localsize bytes"
 
           if [ $FAILED -ne 0 ]; then
             echo "One or more files failed to deploy!"
