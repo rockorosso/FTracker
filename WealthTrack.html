@@ -1,4 +1,4 @@
-<!DOCTYPE html><!-- WealthTrack v2.5 -->
+<!DOCTYPE html><!-- WealthTrack v2.6 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -2545,7 +2545,13 @@ async function fetchBrubankStocks(){
   if(!syms.size)return;
   let fetched=0;
   for(const sym of syms){
-    const price=await fetchYahoo(sym);
+    // BYMA (Argentina) tickers are quoted on Yahoo with a .BA suffix (e.g. YPFD -> YPFD.BA)
+    const candidates = sym.includes('.') ? [sym] : [sym + '.BA', sym];
+    let price = null;
+    for(const c of candidates){
+      price = await fetchYahoo(c);
+      if(price && price > 0) break;
+    }
     if(price&&price>0){
       S.prices[sym]={ars:price,usd:price/S.rates.usdArs,eur:price/S.rates.usdArs/S.rates.eurUsd,ts:Date.now()};
       fetched++;rlog(`✅ ${sym}: ARS ${price.toFixed(2)}`);
