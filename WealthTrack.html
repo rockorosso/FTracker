@@ -1,4 +1,4 @@
-<!DOCTYPE html><!-- WealthTrack v2.7.1 -->
+<!DOCTYPE html><!-- WealthTrack v2.8 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1039,6 +1039,67 @@ function doctaVal(){
   });
   return{eur,usd:toUSD(eur),invEUR};
 }
+// ── Asset-class breakdown ──────────────────────────────────────
+// Navigation stays venue-based; this exists only for the Dashboard
+// overview, snapshots and performance tracking.
+const ASSET_CLASSES=['property','equity','cash','business','crypto','metal','receivable'];
+const CLASS_META={
+  property:{label:'Property',icon:'🏠',color:'#4a9d5f'},
+  equity:{label:'Equities',icon:'📈',color:'#3d7dd8'},
+  cash:{label:'Cash',icon:'💵',color:'#8a8f98'},
+  business:{label:'Business',icon:'🏢',color:'#9b59b6'},
+  crypto:{label:'Crypto',icon:'₿',color:'#e8a33d'},
+  metal:{label:'Metals',icon:'🥇',color:'#d4af37'},
+  receivable:{label:'Receivables',icon:'📄',color:'#5fb3b3'}
+};
+// Explicit override wins; otherwise a cash-account row is plain cash.
+function cashRowClass(c){
+  if(c.assetClass&&ASSET_CLASSES.includes(c.assetClass))return c.assetClass;
+  return 'cash';
+}
+function classBreakdown(){
+  const B={};ASSET_CLASSES.forEach(c=>B[c]={eur:0,cost:0});
+  const add=(c,eur,cost)=>{if(!B[c])return;B[c].eur+=eur||0;B[c].cost+=cost||0;};
+
+  // Crypto — Kraken, Exodus, WhiteBIT (spot + fixed-term)
+  const k=cryptoVal('kraken'),ex=cryptoVal('exodus'),wb=wbitVal();
+  add('crypto',k.eur,k.invEUR);add('crypto',ex.eur,ex.invEUR);add('crypto',wb.eur,wb.invEUR);
+
+  // Equities — eToro + IBKR; their idle cash rows go to Cash
+  ['etoro','ibrk'].forEach(acc=>{
+    (S.accounts[acc]||[]).forEach(p=>{
+      const invE=toEUR(p.invested||0);
+      if(p.type==='cash'){add('cash',invE,invE);return;}
+      const pu=gp(p.symbol,'usd');
+      add('equity',pu!=null?toEUR(pu*p.units):invE,invE);
+    });
+  });
+
+  // Metals — Revolut vaults (physical metal held elsewhere is tagged in Cash)
+  const g=goldVal(),sv=silverVal();
+  add('metal',g.valEUR,g.invEUR);add('metal',sv.valEUR,sv.invEUR);
+
+  // Revolut cash
+  (S.accounts.revolut_cash||[]).forEach(c=>{const v=anyToEUR(c.amount,c.currency);add('cash',v,v);});
+
+  // Brubank — stocks to Equities, cash to Cash
+  (S.accounts.brubank||[]).forEach(p=>{
+    const v=brubankItemVals(p);
+    add(['cash_ars','cash_usd'].includes(p.type)?'cash':'equity',v.eur,v.costEUR);
+  });
+
+  // Property
+  const re=realEstateVal();add('property',re.eur,re.buyEUR);
+
+  // Business
+  const dt=doctaVal();add('business',dt.eur,dt.invEUR);
+
+  // Cash & Banks — respects per-row assetClass override
+  (S.accounts.cash||[]).forEach(c=>{const v=anyToEUR(c.amount,c.currency);add(cashRowClass(c),v,v);});
+
+  return B;
+}
+
 function totalWealth(){
   const k=cryptoVal('kraken'),ex=cryptoVal('exodus'),wb=wbitVal();
   const et=stockVal('etoro'),ib=stockVal('ibrk');
@@ -2192,7 +2253,8 @@ function confirmSnapshot(){
   const date=new Date().toISOString().slice(0,7);
   const newDeposits=parseFloat(document.getElementById('snap-deposits').value)||0;
   S.snapshots=S.snapshots.filter(s=>s.date!==date);
-  S.snapshots.push({date,totalEUR:w.eur,totalUSD:w.usd,invEUR:w.invEUR,newDeposits,at:new Date().toISOString()});
+  S.snapshots.push({date,totalEUR:w.eur,totalUSD:w.usd,invEUR:w.invEUR,newDeposits,
+    byClass:classBreakdown(),at:new Date().toISOString()});
   S.snapshots.sort((a,b)=>a.date.localeCompare(b.date));
   save();
   document.getElementById('snap-ov').classList.remove('open');
