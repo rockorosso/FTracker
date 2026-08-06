@@ -1,4 +1,4 @@
-<!DOCTYPE html><!-- WealthTrack v2.8 -->
+<!DOCTYPE html><!-- WealthTrack v2.9 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -115,6 +115,10 @@ button{font-family:inherit;cursor:pointer;border:none;border-radius:6px;font-siz
 /* ── Misc ── */
 .pna{color:var(--muted);font-style:italic;font-size:11px}
 .sub{color:var(--muted);font-size:12px}
+.snapb{background:rgba(230,163,61,.09);border:1px solid rgba(230,163,61,.35);border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:13px}
+.snapb b{color:#e8a33d}
+.snapb ul{margin:8px 0 10px 18px;padding:0;color:var(--muted);font-size:12px;line-height:1.7}
+.snapb .snapb-act{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 .empty-st{padding:28px;text-align:center;color:var(--muted);font-size:12px}
 .spin{display:inline-block;width:11px;height:11px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -252,6 +256,7 @@ body.contractor-mode #main{margin-left:0}
     <div class="pt">📊 Portfolio Dashboard</div>
     <button class="btn-snap" onclick="takeSnapshot()">📸 Save Monthly Snapshot</button>
   </div>
+  <div id="snap-banner"></div>
   <div class="cards" id="d-cards"></div>
   <div class="chart-row">
     <div class="cb"><div class="cbt">Allocation by Account</div><canvas id="ch-alloc" height="210"></canvas></div>
@@ -1145,6 +1150,7 @@ function renderPage(p){
 // RENDER DASHBOARD
 // ═══════════════════════════════════════════════════════════
 function renderDash(){
+  renderSnapBanner();
   const w=totalWealth();
   const re=realEstateVal();
   const lastSnap=S.snapshots[S.snapshots.length-1];
@@ -1862,6 +1868,8 @@ function buildForm(acc,item){
         ${selCur('f-ccur',v('currentCurrency','EUR'))}
       </div>
     </div>
+    <div class="fg"><label>Valued On <span class="hint" style="text-transform:none;letter-spacing:0">when you last checked this value</span></label>
+      <input id="f-valdate" type="date" value="${item?.valuedAt||new Date().toISOString().slice(0,10)}"></div>
     <div id="rental-fields" style="display:${type==='rental'?'block':'none'}">
       <hr style="border-color:var(--border);margin:12px 0">
       <div style="font-size:11px;color:var(--muted);margin-bottom:10px;font-weight:600">RENTAL INCOME & COSTS — enter TOTAL amounts, your share computed via ownership %</div>
@@ -2093,6 +2101,7 @@ function saveModal(){
       ownershipPct:own,
       purchasePrice:VN('f-pprice'),purchaseCurrency:V('f-pcur'),
       currentValue:VN('f-cprice'),currentCurrency:V('f-ccur'),
+      valuedAt:V('f-valdate')||new Date().toISOString().slice(0,10),
       purchaseDate:V('f-pdate'),
       monthlyRent:type==='rental'?VN('f-rent'):0,rentCurrency:type==='rental'?V('f-rcur'):'EUR',
       monthlyMortgage:type==='rental'?VN('f-mort'):0,mortgageCurrency:type==='rental'?V('f-mortcur2')||V('f-mcur'):'EUR',
@@ -2254,10 +2263,71 @@ function confirmSnapshot(){
   const newDeposits=parseFloat(document.getElementById('snap-deposits').value)||0;
   S.snapshots=S.snapshots.filter(s=>s.date!==date);
   S.snapshots.push({date,totalEUR:w.eur,totalUSD:w.usd,invEUR:w.invEUR,newDeposits,
-    byClass:classBreakdown(),at:new Date().toISOString()});
+    byClass:classBreakdown(),auto:false,stale:staleManualEntries(),at:new Date().toISOString()});
   S.snapshots.sort((a,b)=>a.date.localeCompare(b.date));
   save();
   document.getElementById('snap-ov').classList.remove('open');
+  renderDash();
+}
+
+// ── Auto-snapshot ──────────────────────────────────────────────
+// Manual values (cash, property, business) don't self-update, so an
+// automatic snapshot is provisional: it's recorded as auto:true and
+// lists which figures were stale, so a month is never lost entirely.
+const STALE_DAYS=45;
+function staleManualEntries(days=STALE_DAYS){
+  const cut=Date.now()-days*86400000;
+  const out=[];
+  const chk=(label,ds)=>{
+    if(!ds){out.push({label,age:null});return;}
+    const t=new Date(ds).getTime();
+    if(isNaN(t)||t<cut)out.push({label,age:isNaN(t)?null:Math.floor((Date.now()-t)/86400000)});
+  };
+  (S.accounts.cash||[]).forEach(c=>chk(c.desc||'Cash entry',c.updated));
+  (S.accounts.revolut_cash||[]).forEach(c=>chk('Revolut '+c.currency,c.updated));
+  (S.accounts.realestate||[]).forEach(p=>chk(p.name||'Property',p.valuedAt));
+  (S.accounts.docta||[]).forEach(p=>chk('Docta: '+(p.name||'entry'),p.date));
+  return out;
+}
+
+function maybeAutoSnapshot(){
+  if(!S.snapshots)S.snapshots=[];
+  const month=new Date().toISOString().slice(0,7);
+  if(S.snapshots.some(s=>s.date===month))return;      // already have this month
+  const w=totalWealth();
+  if(!isFinite(w.eur)||w.eur<=0)return;               // don't record an unloaded state
+  S.snapshots.push({date:month,totalEUR:w.eur,totalUSD:w.usd,invEUR:w.invEUR,
+    newDeposits:0,byClass:classBreakdown(),auto:true,stale:staleManualEntries(),
+    at:new Date().toISOString()});
+  S.snapshots.sort((a,b)=>a.date.localeCompare(b.date));
+  save();
+  renderDash();
+}
+
+function renderSnapBanner(){
+  const el=document.getElementById('snap-banner');
+  if(!el)return;
+  const month=new Date().toISOString().slice(0,7);
+  const snap=(S.snapshots||[]).find(s=>s.date===month);
+  if(!snap||!snap.auto){el.innerHTML='';return;}
+  const st=snap.stale||[];
+  const shown=st.slice(0,6).map(s=>`<li>${s.label} — ${s.age==null?'never updated':s.age+' days old'}</li>`).join('');
+  const more=st.length>6?`<li>…and ${st.length-6} more</li>`:'';
+  el.innerHTML=`<div class="snapb">
+    <b>📸 ${month} snapshot taken automatically.</b>
+    It used the values already on file, so anything you haven't refreshed lately may be out of date${st.length?` — <b>${st.length}</b> ${st.length===1?'figure needs':'figures need'} review:`:'.'}
+    ${st.length?`<ul>${shown}${more}</ul>`:''}
+    <div class="snapb-act">
+      <button class="btn-p" onclick="takeSnapshot()">Update figures &amp; re-take</button>
+      <button class="btn-s" onclick="dismissAutoSnap()">Looks right, confirm it</button>
+    </div>
+  </div>`;
+}
+
+function dismissAutoSnap(){
+  const month=new Date().toISOString().slice(0,7);
+  const snap=(S.snapshots||[]).find(s=>s.date===month);
+  if(snap){snap.auto=false;save();}
   renderDash();
 }
 
@@ -3236,7 +3306,7 @@ async function unlock(){
     currentRole='owner';
     document.body.classList.remove('contractor-mode');
     document.getElementById('lock-screen').style.display='none';
-    renderDash();setTimeout(doRefresh,600);
+    renderDash();setTimeout(()=>{doRefresh().finally(()=>maybeAutoSnapshot());},600);
   }else if(window.__WT_CONT_USER__&&window.__WT_CONT_PASS__&&uh===window.__WT_CONT_USER__&&ph===window.__WT_CONT_PASS__){
     // Contractor login
     currentRole='contractor';
@@ -3324,7 +3394,7 @@ if(window.__WT_PASS__&&window.__WT_USER__){
   document.getElementById('lock-user').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('lock-input').focus();});
   document.getElementById('lock-input').addEventListener('keydown',e=>{if(e.key==='Enter')unlock();});
 }else{
-  renderDash();setTimeout(doRefresh,600);
+  renderDash();setTimeout(()=>{doRefresh().finally(()=>maybeAutoSnapshot());},600);
 }
 </script>
 </body>
