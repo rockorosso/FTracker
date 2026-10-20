@@ -1,4 +1,4 @@
-<!DOCTYPE html><!-- WealthTrack v2.9 -->
+<!DOCTYPE html><!-- WealthTrack v3.0 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -346,14 +346,27 @@ body.contractor-mode #main{margin-left:0}
   <div class="ph"><div class="pt">🏠 Real Estate</div><button class="btn-p" onclick="openModal('realestate')">+ Add Property</button></div>
   <div class="cards" id="c-re"></div>
   <div class="tb">
-    <div class="tbh"><span class="tbt">Properties</span></div>
+    <div class="tbh"><span class="tbt">Properties</span><span class="pna">Equity = your share of (value − loan outstanding)</span></div>
     <div class="tbr"><table><thead><tr>
       <th>Property</th><th>Type</th><th>Date</th>
-      <th>Your Capital</th><th>Property Value</th><th>Your Equity</th>
-      <th>Monthly Breakdown (your share)</th>
-      <th>Net CF / mo</th><th>Cash-on-Cash ROI</th>
+      <th>Your Capital</th><th>Property Value</th>
+      <th>Loan Outstanding</th><th>Loan Paid Off</th>
+      <th>Your Equity</th><th>Capital Gain</th>
       <th>Note</th><th></th>
     </tr></thead><tbody id="t-re"></tbody></table></div>
+  </div>
+
+  <div class="tb" style="margin-top:16px">
+    <div class="tbh" style="cursor:pointer" onclick="toggleRentPanel()">
+      <span class="tbt"><span id="rent-caret">▸</span> Rental economics <span class="pna">reference only — this cash is tracked in your bank accounts</span></span>
+      <span class="pna" id="rent-sum"></span>
+    </div>
+    <div id="rent-body" style="display:none">
+      <div class="tbr"><table><thead><tr>
+        <th>Property</th><th>Rent / mo</th><th>Mortgage / mo</th><th>OpEx / mo</th><th>Maint / mo</th>
+        <th>Net CF / mo</th><th>Annual Net</th><th>Cash-on-Cash ROI</th>
+      </tr></thead><tbody id="t-rent"></tbody></table></div>
+    </div>
   </div>
 </div>
 
@@ -1440,41 +1453,59 @@ function renderStocks(acc){
 // ═══════════════════════════════════════════════════════════
 // RENDER REAL ESTATE
 // ═══════════════════════════════════════════════════════════
+function toggleRentPanel(){
+  const b=document.getElementById('rent-body'),c=document.getElementById('rent-caret');
+  const open=b.style.display!=='none';
+  b.style.display=open?'none':'';
+  c.textContent=open?'▸':'▾';
+}
+
 function renderRealEstate(){
   const rows=S.accounts.realestate||[];
   const RE={land:'🌍 Land',rental:'🏘️ Rental'};
-  let totCapital=0,totPropEUR=0,totNetMonthly=0;
+  let totCapital=0,totPropEUR=0,totNetMonthly=0,totLoanEUR=0,totMarketEUR=0;
+  const rentRows=[];
 
   const html=rows.map(p=>{
     if(p.type==='rental'){
       const m=rentalMetrics(p);
       const eq=calcMortgageEquity(p);
+      const own=(p.ownershipPct||100)/100;
       // For totals: use equity if available, else full property share
       const valueForTotal=eq?eq.equityEUR:m.propValEUR;
+      const myLoanEUR=eq?eq.outstandingEUR*own:0;
       totCapital+=m.capital; totPropEUR+=valueForTotal; totNetMonthly+=m.netMonthly;
+      totLoanEUR+=myLoanEUR; totMarketEUR+=m.propValEUR;
       const propGainEUR=valueForTotal-m.capital;
-      // Equity cell — if no mortgage data, assume 100% equity (no outstanding loan)
-      const eqCell=eq
-        ?`${fm(eq.equityEUR)}<br>
-           <span style="font-size:10px;color:var(--green)">${eq.equityPct.toFixed(1)}% of property</span><br>
-           <span style="font-size:10px;color:var(--muted)">+${fm(eq.monthlyGainEUR)}/mo principal<br>
-           ${eq.remaining} months left</span>`
-        :`${fm(m.propValEUR)}<br><span style="font-size:10px;color:var(--green)">100% yours</span>`;
+      const gainPct=m.capital>0?(propGainEUR/m.capital)*100:null;
+      const paidPct=eq&&p.mortgagePrincipal?(1-(eq.outstanding/p.mortgagePrincipal))*100:null;
+
+      rentRows.push(`<tr>
+        <td><strong>${p.name}</strong></td>
+        <td class="pos">+${fm(m.rentEUR)}</td>
+        <td class="neg">−${fm(m.mortEUR)}</td>
+        <td class="neg">−${fm(m.opExEUR)}</td>
+        <td class="neg">−${fm(m.maintEUR)}</td>
+        <td class="${pc(m.netMonthly)}"><strong>${fm(m.netMonthly)}</strong></td>
+        <td class="${pc(m.annualNet)}">${fm(m.annualNet)}</td>
+        <td class="${pc(m.roi)}">${m.roi!=null?fp(m.roi):'—'}</td></tr>`);
+
+      const loanCell=eq
+        ?`${fm(myLoanEUR)}<br><span style="font-size:10px;color:var(--muted)">your share · ${eq.remaining} mo left</span>`
+        :`<span style="color:var(--green)">No loan</span>`;
+      const paidCell=paidPct!=null
+        ?`<strong>${paidPct.toFixed(1)}%</strong><br><span style="font-size:10px;color:var(--muted)">+${fm(eq.monthlyGainEUR)}/mo</span>`
+        :'—';
       return`<tr>
-        <td><strong>${p.name}</strong><br><span style="font-size:10px;color:var(--muted)">${p.country||''} · ${p.own*100}% yours</span></td>
+        <td><strong>${p.name}</strong><br><span style="font-size:10px;color:var(--muted)">${p.country||''} · ${own*100}% yours</span></td>
         <td><span class="badge b-orange">🏘️ Rental</span></td>
         <td style="color:var(--muted)">${p.purchaseDate||'—'}</td>
         <td>${fm(m.capital)}<br><span style="font-size:10px;color:var(--muted)">your cash in</span></td>
-        <td>${fm(m.propValEUR)}<br><span style="font-size:10px;color:var(--muted)">your share of property</span></td>
-        <td>${eqCell}</td>
-        <td class="${pc(m.rentEUR)}" style="font-size:12px">
-          +${fm(m.rentEUR)} rent<br>
-          <span style="color:var(--red)">−${fm(m.mortEUR)} mortgage</span><br>
-          <span style="color:var(--red)">−${fm(m.opExEUR)} opex</span><br>
-          <span style="color:var(--red)">−${fm(m.maintEUR)} maint/mo</span>
-        </td>
-        <td class="${pc(m.netMonthly)}"><strong>${fm(m.netMonthly)}</strong>/mo<br><span style="font-size:10px">${fm(m.annualNet)}/yr</span></td>
-        <td class="${pc(m.roi)}">${m.roi!=null?`<strong>${fp(m.roi)}</strong><br><span style="font-size:10px">cash-on-cash</span>`:'—'}</td>
+        <td>${fm(m.propValEUR)}<br><span style="font-size:10px;color:var(--muted)">your share</span></td>
+        <td class="${myLoanEUR?'neg':''}">${loanCell}</td>
+        <td>${paidCell}</td>
+        <td><strong>${fm(valueForTotal)}</strong>${eq?`<br><span style="font-size:10px;color:var(--green)">${eq.equityPct.toFixed(1)}% of property</span>`:''}</td>
+        <td class="${pc(propGainEUR)}"><strong>${fm(propGainEUR)}</strong>${gainPct!=null?`<br><span style="font-size:10px">${fp(gainPct)}</span>`:''}</td>
         <td class="nt">${p.note||''}</td>
         <td><button class="btn-s" onclick="openModal('realestate','${p.id}')">Edit</button> <button class="btn-d" onclick="del('realestate','${p.id}')">✕</button></td></tr>`;
     } else {
@@ -1483,16 +1514,17 @@ function renderRealEstate(){
       const buyEUR=anyToEUR(p.purchasePrice||0,p.purchaseCurrency||'EUR');
       const curEUR=anyToEUR(p.currentValue||0,p.currentCurrency||'EUR')*own;
       const pnl=curEUR-buyEUR,pct=buyEUR>0?(pnl/buyEUR)*100:null;
-      totCapital+=buyEUR; totPropEUR+=curEUR;
+      totCapital+=buyEUR; totPropEUR+=curEUR; totMarketEUR+=curEUR;
       return`<tr>
         <td><strong>${p.name}</strong><br><span style="font-size:10px;color:var(--muted)">${p.country||''} · ${own*100}% yours</span></td>
         <td><span class="badge b-purple">🌍 Land</span></td>
         <td style="color:var(--muted)">${p.purchaseDate||'—'}</td>
         <td>${fm(buyEUR)}<br><span style="font-size:10px;color:var(--muted)">your capital</span></td>
         <td>${fm(curEUR)}<br><span style="font-size:10px;color:var(--muted)">your share</span></td>
-        <td>${fm(curEUR)}<br><span style="font-size:10px;color:var(--green)">100% yours</span></td>
-        <td colspan="2" class="${pc(pnl)}">${fm(pnl)} (${fp(pct)})<br><span style="font-size:10px;color:var(--muted)">appreciation</span></td>
+        <td><span style="color:var(--green)">No loan</span></td>
         <td>—</td>
+        <td><strong>${fm(curEUR)}</strong><br><span style="font-size:10px;color:var(--green)">100% yours</span></td>
+        <td class="${pc(pnl)}"><strong>${fm(pnl)}</strong><br><span style="font-size:10px">${fp(pct)}</span></td>
         <td class="nt">${p.note||''}</td>
         <td><button class="btn-s" onclick="openModal('realestate','${p.id}')">Edit</button> <button class="btn-d" onclick="del('realestate','${p.id}')">✕</button></td></tr>`;
     }
@@ -1504,21 +1536,35 @@ function renderRealEstate(){
   document.getElementById('t-re').innerHTML=html+(rows.length?`<tr class="tr-total">
     <td colspan="3"><strong>TOTAL</strong></td>
     <td><strong>${fm(totCapital)}</strong></td>
+    <td><strong>${fm(totMarketEUR)}</strong></td>
+    <td class="${totLoanEUR?'neg':''}"><strong>${totLoanEUR?fm(totLoanEUR):'—'}</strong></td>
     <td></td>
     <td><strong>${fm(totPropEUR)}</strong><br><span style="font-size:10px;color:var(--muted)">your total equity</span></td>
-    <td></td>
-    <td class="${pc(totNetMonthly)}"><strong>${fm(totNetMonthly)}/mo</strong></td>
-    <td class="${pc(totROI)}">${totROI!=null?`<strong>${fp(totROI)}</strong>`:'—'}</td>
+    <td class="${pc(totPropEUR-totCapital)}"><strong>${fm(totPropEUR-totCapital)}</strong></td>
     <td colspan="2"></td></tr>`
     :'<tr><td colspan="11" class="empty-st">No properties yet. Click "+ Add Property".</td></tr>');
 
+  // Rental economics panel (reference only — cash itself lives in the bank accounts)
+  document.getElementById('t-rent').innerHTML=rentRows.length
+    ? rentRows.join('')+`<tr class="tr-total"><td><strong>TOTAL</strong></td><td colspan="4"></td>
+        <td class="${pc(totNetMonthly)}"><strong>${fm(totNetMonthly)}/mo</strong></td>
+        <td class="${pc(totAnnual)}"><strong>${fm(totAnnual)}</strong></td>
+        <td class="${pc(totROI)}">${totROI!=null?`<strong>${fp(totROI)}</strong>`:'—'}</td></tr>`
+    : '<tr><td colspan="8" class="empty-st">No rental properties.</td></tr>';
+  document.getElementById('rent-sum').textContent=
+    totNetMonthly?`${fm(totNetMonthly)}/mo · ${fm(totAnnual)}/yr${totROI!=null?' · '+fp(totROI)+' cash-on-cash':''}`:'';
+
+  const ltv=totMarketEUR>0?(totLoanEUR/totMarketEUR)*100:null;
+  const gain=totPropEUR-totCapital;
+  const gainPct=totCapital>0?(gain/totCapital)*100:null;
+
   document.getElementById('c-re').innerHTML=`
+    <div class="card"><div class="cl">Your Equity</div><div class="cv">${fm(totPropEUR)}</div><div class="cs">Your share of value − loan</div></div>
     <div class="card"><div class="cl">Your Capital Invested</div><div class="cv">${fm(totCapital)}</div><div class="cs">Cash out-of-pocket (excl. loans)</div></div>
-    <div class="card"><div class="cl">Your Property Value</div><div class="cv">${fm(totPropEUR)}</div><div class="cs">Your share at market value</div></div>
-    <div class="card"><div class="cl">Net Cash Flow / Month</div><div class="cv ${pc(totNetMonthly)}">${totNetMonthly?fm(totNetMonthly):'—'}</div><div class="cs">Rent − mortgage − opex − maint</div></div>
-    <div class="card"><div class="cl">Annual Net Income</div><div class="cv ${pc(totAnnual)}">${totAnnual?fm(totAnnual):'—'}</div></div>
-    <div class="card"><div class="cl">Cash-on-Cash ROI</div><div class="cv ${pc(totROI)}">${totROI!=null?fp(totROI):'—'}</div><div class="cs">Annual net ÷ capital invested</div></div>
-    <div class="card"><div class="cl">Properties</div><div class="cv">${rows.length}</div></div>`;
+    <div class="card"><div class="cl">Capital Gain</div><div class="cv ${pc(gain)}">${fm(gain)}</div><div class="cs">${gainPct!=null?fp(gainPct)+' on cash invested':''}</div></div>
+    <div class="card"><div class="cl">Loan Outstanding</div><div class="cv ${totLoanEUR?'neg':''}">${totLoanEUR?fm(totLoanEUR):'—'}</div><div class="cs">Your share still to pay</div></div>
+    <div class="card"><div class="cl">Loan-to-Value</div><div class="cv">${ltv!=null&&totLoanEUR?fp(ltv):'—'}</div><div class="cs">Debt ÷ market value</div></div>
+    <div class="card"><div class="cl">Properties</div><div class="cv">${rows.length}</div><div class="cs">${fm(totMarketEUR)} market value</div></div>`;
 }
 
 // ═══════════════════════════════════════════════════════════
