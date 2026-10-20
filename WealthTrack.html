@@ -1,4 +1,4 @@
-<!DOCTYPE html><!-- WealthTrack v3.0 -->
+<!DOCTYPE html><!-- WealthTrack v3.1 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -899,6 +899,8 @@ function stockVal(acc){
   (S.accounts[acc]||[]).forEach(p=>{
     invUSD+=p.invested||0;
     if(p.type==='cash')valUSD+=p.invested||0;
+    // manualValue (USD) wins — for holdings with no usable price feed
+    else if(p.manualValue!=null&&p.manualValue!=='')valUSD+=Number(p.manualValue)||0;
     else{const pu=gp(p.symbol,'usd');valUSD+=pu!=null?pu*p.units:(p.invested||0);}
   });
   return{usd:valUSD,eur:toEUR(valUSD),invUSD,invEUR:toEUR(invUSD)};
@@ -1877,7 +1879,9 @@ function buildForm(acc,item){
     <div class="frow">
       <div class="fg"><label>Date Opened</label><input id="f-opened" type="date" value="${v('opened')}"></div>
       <div class="fg"><label>Note</label><input id="f-note" value="${v('note')}"></div>
-    </div>`;
+    </div>
+    <div class="fg"><label>Manual Value (USD) <span class="hint" style="text-transform:none;letter-spacing:0">leave blank unless there's no usable price feed — overrides the market price</span></label>
+      <input id="f-manualval" type="number" step="any" value="${item?.manualValue??''}" placeholder="blank = use live price"></div>`;
 
   if(acc==='realestate'){
     const type=item?.type||'land';
@@ -2139,7 +2143,9 @@ function saveModal(){
   if(['kraken','exodus','whitebit'].includes(acc)){
     item={id:editId||gid(),name:V('f-name'),symbol:V('f-symbol').toUpperCase(),cgId:V('f-cgid').toLowerCase().trim(),units:VN('f-units'),invested:VN('f-invested')||0};
   }else if(['etoro','ibrk'].includes(acc)){
+    const mvRaw=(document.getElementById('f-manualval')?.value||'').trim();
     item={id:editId||gid(),name:V('f-name'),symbol:V('f-symbol').toUpperCase(),type:V('f-type'),units:VN('f-units'),invested:VN('f-invested'),entry:VN('f-entry'),opened:V('f-opened'),note:V('f-note')};
+    if(mvRaw!=='')item.manualValue=Number(mvRaw);
   }else if(acc==='realestate'){
     const type=V('f-type');
     const own=Math.min(100,Math.max(1,VN('f-own')||100));
