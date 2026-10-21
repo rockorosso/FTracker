@@ -1,4 +1,4 @@
-<!DOCTYPE html><!-- WealthTrack v3.1 -->
+<!DOCTYPE html><!-- WealthTrack v3.1.1 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1178,7 +1178,7 @@ function renderDash(){
     <div class="card"><div class="cl">Total Invested</div><div class="cv">${fm(w.invEUR)}</div><div class="cs">Cost basis</div></div>
     <div class="card"><div class="cl">Organic Growth</div><div class="cv ${pc(og)}">${fm(og)}</div><div class="cc ${pc(og)}">${fp(ogPct)}</div></div>
     <div class="card"><div class="cl">vs Last Snapshot</div><div class="cv ${pc(delta)}">${delta!=null?fm(delta):'—'}</div><div class="cs">${lastSnap?'Since '+lastSnap.date:'No snapshots yet'}</div></div>
-    <div class="card"><div class="cl">RE Monthly Cash Flow</div><div class="cv ${pc(re.cfEUR)}">${re.cfEUR!==0?fm(re.cfEUR):'—'}</div><div class="cs">Rent − Mortgage</div></div>
+    <div class="card"><div class="cl">RE Monthly Cash Flow</div><div class="cv ${pc(re.netCF)}">${re.netCF?fm(re.netCF):'—'}</div><div class="cs">Rent − mortgage − opex − maint</div></div>
     <div class="card"><div class="cl">Crypto Total</div><div class="cv">${fm(w.parts.k.eur+w.parts.ex.eur+w.parts.wb.eur)}</div><div class="cs">${fp((w.parts.k.eur+w.parts.ex.eur+w.parts.wb.eur)/w.eur*100)} of portfolio</div></div>`;
 
   // Breakdown table
