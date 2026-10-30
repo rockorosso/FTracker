@@ -1,4 +1,4 @@
-<!DOCTYPE html><!-- WealthTrack v3.1.1 -->
+<!DOCTYPE html><!-- WealthTrack v3.2 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -119,6 +119,10 @@ button{font-family:inherit;cursor:pointer;border:none;border-radius:6px;font-siz
 .snapb b{color:#e8a33d}
 .snapb ul{margin:8px 0 10px 18px;padding:0;color:var(--muted);font-size:12px;line-height:1.7}
 .snapb .snapb-act{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+#save-banner{position:fixed;right:18px;bottom:18px;z-index:9999;max-width:430px}
+.savew{background:#2a1416;border:1px solid #a33;border-radius:10px;padding:14px 16px;font-size:13px;box-shadow:0 8px 28px rgba(0,0,0,.55)}
+.savew b{color:#ff6b6b}
+.savew-act{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 .empty-st{padding:28px;text-align:center;color:var(--muted);font-size:12px}
 .spin{display:inline-block;width:11px;height:11px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -194,6 +198,7 @@ body.contractor-mode #main{margin-left:0}
 </style>
 </head>
 <body>
+<div id="save-banner"></div>
 <div id="lock-screen" style="display:none">
   <div class="lock-box">
     <div class="lock-logo">💼 <span>Wealth</span>Track</div>
@@ -790,6 +795,8 @@ function loadState(){
     // Use whichever copy was saved most recently
     const serverTs=(serverData&&serverData._savedAt)||0;
     const localTs=(localData&&localData._savedAt)||0;
+    // Remember what the SERVER holds, regardless of which copy we display
+    SRV_VERSION=serverTs||null;
     if(localData&&localTs>serverTs){
       S=localData;fixKeys();return;
     }
@@ -835,12 +842,52 @@ function fixKeys(){
     }
   });
 }
-function save(){
+// _savedAt we believe the SERVER currently holds. Set on load, updated after
+// every successful save. Sent with each write so the server can refuse to
+// overwrite a copy that changed underneath us.
+let SRV_VERSION=null;
+
+function save(force){
   S._savedAt=Date.now();
   localStorage.setItem('wt_v3',JSON.stringify(S));
-  fetch('save.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:S})})
-    .then(r=>r.json()).then(j=>{if(j.error)console.error('WealthTrack save failed:',j.error);})
-    .catch(()=>{});
+  const mine=S._savedAt;
+  fetch('save.php',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({data:S, baseSavedAt: force?null:SRV_VERSION})})
+    .then(async r=>{
+      let j={}; try{ j=await r.json(); }catch(e){}
+      if(r.status===409){ showSaveConflict(j); return; }
+      if(j.error){ console.error('WealthTrack save failed:',j.error); showSaveError(j.error); return; }
+      SRV_VERSION=mine;           // server now holds our copy
+      hideSaveBanner();
+    })
+    .catch(()=>{ showSaveError('Could not reach the server — your change is saved in this browser only.'); });
+}
+
+function hideSaveBanner(){ const el=document.getElementById('save-banner'); if(el) el.innerHTML=''; }
+
+function showSaveError(msg){
+  const el=document.getElementById('save-banner'); if(!el) return;
+  el.innerHTML=`<div class="savew"><b>⚠ Not saved to the server.</b> ${msg}</div>`;
+}
+
+function showSaveConflict(j){
+  const el=document.getElementById('save-banner'); if(!el) return;
+  const when=j.serverSavedAt?new Date(j.serverSavedAt).toLocaleString():'unknown';
+  el.innerHTML=`<div class="savew">
+    <b>⚠ Your change was NOT saved to the server.</b>
+    The server copy changed since this page loaded (last saved ${when}) — probably another
+    tab or device. Saving now would overwrite it.
+    <div class="savew-act">
+      <button class="btn-p" onclick="location.reload()">Reload the latest</button>
+      <button class="btn-d" onclick="forceSave()">Overwrite with my version</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px">Your change is still held in this browser, so reloading will discard it.</div>
+  </div>`;
+}
+
+function forceSave(){
+  if(!confirm('Overwrite the server copy with this browser’s version? Any changes made elsewhere since this page loaded will be lost.\n\nA backup of the server copy is kept automatically.'))return;
+  save(true);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -3437,10 +3484,11 @@ async function setContractorCreds(){
 // INIT
 // ═══════════════════════════════════════════════════════════
 loadState();
-// Auto-save to file on first load (migrates localStorage data to the file)
-setTimeout(()=>{
-  fetch('save.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:S})}).catch(()=>{});
-},1500);
+// NOTE: the old "auto-save on load" that fired here was removed in v3.2.
+// It pushed this tab's in-memory copy to the server 1.5s after every load
+// without checking whether the server held something newer, so a stale tab
+// could silently overwrite good data. Saves now happen only on real edits,
+// and go through the version check in save().
 if(window.__WT_PASS__&&window.__WT_USER__){
   document.getElementById('lock-screen').style.display='flex';
   document.getElementById('lock-user').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('lock-input').focus();});

@@ -1,15 +1,20 @@
 <?php
 /**
- * WealthTrack — save.php v2
- * Accepts POST requests from the app and persists data + credentials.
+ * WealthTrack — save.php v3
+ * Persists app data + credentials.
+ *
+ * v3 changes:
+ *  - Removed the unauthenticated `html` write endpoint (deployment is handled
+ *    by the token-protected _deploy.php instead).
+ *  - Keeps rolling backups of data.json before each overwrite.
+ *  - Optimistic concurrency: a client may send `baseSavedAt` (the _savedAt it
+ *    believes the server holds). If the server has moved on, the write is
+ *    refused with 409 instead of silently clobbering newer data.
  */
 
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Cache-Control: no-store');
 
-// Handle CORS preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
@@ -32,28 +37,72 @@ if (!is_array($payload)) {
 
 $dataFile   = __DIR__ . '/data.json';
 $configFile = __DIR__ . '/config.json';
-$htmlFile   = __DIR__ . '/WealthTrack.html';
 
-// ── Deploy HTML (self-update mechanism) ───────────────────────
-if (array_key_exists('html', $payload) && is_string($payload['html']) && strlen($payload['html']) > 10000) {
-    $result = file_put_contents($htmlFile, $payload['html'], LOCK_EX);
-    if ($result === false) {
-        http_response_code(500);
-        echo json_encode(['error' => 'Failed to write WealthTrack.html']);
-        exit;
+/**
+ * Keep the last N copies of data.json. Stored outside the web root when
+ * possible so backups are never downloadable; otherwise locked down with
+ * .htaccess.
+ */
+function wt_backup($dataFile, $keep = 30) {
+    if (!file_exists($dataFile) || filesize($dataFile) < 50) return null;
+
+    $dir = dirname($dataFile) . '/../wt_backups';
+    if (!is_dir($dir)) @mkdir($dir, 0700, true);
+    if (!is_dir($dir) || !is_writable($dir)) {
+        $dir = dirname($dataFile) . '/wt_backups';
+        if (!is_dir($dir)) @mkdir($dir, 0700, true);
+        if (!is_dir($dir) || !is_writable($dir)) return null;
+        $ht = $dir . '/.htaccess';
+        if (!file_exists($ht)) {
+            @file_put_contents($ht, "Require all denied\n<IfModule !mod_authz_core.c>\nDeny from all\n</IfModule>\n");
+        }
     }
-    echo json_encode(['ok' => true, 'html_bytes' => $result]);
-    exit;
+
+    $dest = $dir . '/data-' . date('Ymd-His') . '.json';
+    @copy($dataFile, $dest);
+
+    // Rotate: keep only the newest $keep files
+    $files = glob($dir . '/data-*.json');
+    if ($files && count($files) > $keep) {
+        usort($files, function ($a, $b) { return filemtime($a) <=> filemtime($b); });
+        foreach (array_slice($files, 0, count($files) - $keep) as $old) @unlink($old);
+    }
+    return $dest;
 }
+
+$backupPath = null;
 
 // ── Save main app data ─────────────────────────────────────────
 if (array_key_exists('data', $payload) && $payload['data'] !== null) {
+
+    // Optimistic concurrency check
+    if (array_key_exists('baseSavedAt', $payload) && $payload['baseSavedAt'] !== null) {
+        $currentSavedAt = 0;
+        if (file_exists($dataFile)) {
+            $cur = json_decode(file_get_contents($dataFile), true);
+            if (is_array($cur) && isset($cur['_savedAt'])) $currentSavedAt = $cur['_savedAt'];
+        }
+        if ($currentSavedAt > 0 && (float)$currentSavedAt !== (float)$payload['baseSavedAt']) {
+            http_response_code(409);
+            echo json_encode([
+                'error'        => 'conflict',
+                'message'      => 'The server copy changed since this page loaded.',
+                'serverSavedAt'=> $currentSavedAt,
+                'yourBase'     => $payload['baseSavedAt'],
+            ]);
+            exit;
+        }
+    }
+
     $encoded = json_encode($payload['data']);
-    if ($encoded === false) {
+    if ($encoded === false || strlen($encoded) < 50) {
         http_response_code(500);
-        echo json_encode(['error' => 'Failed to encode data']);
+        echo json_encode(['error' => 'Refusing to write empty or unencodable data']);
         exit;
     }
+
+    $backupPath = wt_backup($dataFile);
+
     $result = file_put_contents($dataFile, $encoded, LOCK_EX);
     if ($result === false) {
         http_response_code(500);
@@ -62,14 +111,11 @@ if (array_key_exists('data', $payload) && $payload['data'] !== null) {
     }
 }
 
-// ── Save credentials (passHash, userHash, contUserHash, contPassHash) ──
+// ── Save credentials ───────────────────────────────────────────
 $credKeys = ['passHash', 'userHash', 'contUserHash', 'contPassHash'];
 $hasCredUpdate = false;
 foreach ($credKeys as $key) {
-    if (array_key_exists($key, $payload)) {
-        $hasCredUpdate = true;
-        break;
-    }
+    if (array_key_exists($key, $payload)) { $hasCredUpdate = true; break; }
 }
 
 if ($hasCredUpdate) {
@@ -90,4 +136,4 @@ if ($hasCredUpdate) {
     file_put_contents($configFile, json_encode($config), LOCK_EX);
 }
 
-echo json_encode(['ok' => true]);
+echo json_encode(['ok' => true, 'backup' => $backupPath ? basename($backupPath) : null]);
