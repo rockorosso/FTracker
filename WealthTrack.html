@@ -1,4 +1,4 @@
-<!DOCTYPE html><!-- WealthTrack v3.2 -->
+<!DOCTYPE html><!-- WealthTrack v3.3 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -66,9 +66,40 @@ tr:hover td{background:var(--surface2)}
 .tr-total td{font-weight:700;background:var(--surface2)!important;border-top:2px solid var(--border)}
 
 /* ── Charts ── */
-.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
-.cb{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px}
+.chart-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;margin-bottom:18px}
+.cb{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;min-width:0}
 .cbt{font-size:12px;font-weight:600;margin-bottom:10px;color:var(--muted)}
+
+/* Charts must never grow with container width — Chart.js otherwise makes a
+   doughnut as tall as its container is wide. */
+.chart-box{position:relative;height:clamp(200px,24vh,260px);width:100%}
+.chart-box canvas{position:absolute;inset:0;width:100%!important;height:100%!important}
+.chart-box-wide{height:clamp(200px,26vh,300px)}
+
+/* Hero summary */
+.hero{display:grid;grid-template-columns:minmax(250px,1fr) minmax(0,2.2fr);gap:14px;margin-bottom:14px}
+@media(max-width:1000px){.hero{grid-template-columns:1fr}}
+.hero-main{background:linear-gradient(135deg,rgba(46,160,67,.13),rgba(46,160,67,.03));border:1px solid rgba(46,160,67,.3);border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;justify-content:center}
+.hero-lab{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.hero-val{font-size:clamp(26px,3.2vw,40px);font-weight:800;line-height:1.1;margin:6px 0 2px}
+.hero-sub{font-size:12px;color:var(--muted)}
+.hero-chg{margin-top:10px;font-size:13px;font-weight:600}
+.hero-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.hstat{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:11px 13px}
+.hstat .hl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.hstat .hv{font-size:17px;font-weight:700;margin-top:3px;line-height:1.2}
+.hstat .hs{font-size:10px;color:var(--muted);margin-top:2px}
+
+/* Allocation bar */
+.allocwrap{margin-bottom:14px}
+.allocbar{display:flex;width:100%;height:28px;border-radius:6px;overflow:hidden;background:var(--border)}
+.allocbar>span{display:block;height:100%}
+.alloclegend{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:7px 18px;margin-top:12px}
+.alli{display:flex;align-items:center;gap:7px;font-size:12px;min-width:0}
+.alli .dot{width:10px;height:10px;border-radius:3px;flex:0 0 auto}
+.alli .nm{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.alli .vl{margin-left:auto;font-weight:600;white-space:nowrap}
+.alli .pc{color:var(--muted);font-size:11px;min-width:40px;text-align:right}
 .cbf{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:18px}
 
 /* ── Badges ── */
@@ -262,10 +293,12 @@ body.contractor-mode #main{margin-left:0}
     <button class="btn-snap" onclick="takeSnapshot()">📸 Save Monthly Snapshot</button>
   </div>
   <div id="snap-banner"></div>
+  <div class="hero" id="d-hero"></div>
+  <div class="cb allocwrap"><div class="cbt">Allocation by Asset Type</div><div id="d-allocbar"></div></div>
   <div class="cards" id="d-cards"></div>
   <div class="chart-row">
-    <div class="cb"><div class="cbt">Allocation by Account</div><canvas id="ch-alloc" height="210"></canvas></div>
-    <div class="cb"><div class="cbt">Allocation by Asset Type</div><canvas id="ch-type" height="210"></canvas></div>
+    <div class="cb"><div class="cbt">Allocation by Account</div><div class="chart-box"><canvas id="ch-alloc"></canvas></div></div>
+    <div class="cb"><div class="cbt">Allocation by Asset Type</div><div class="chart-box"><canvas id="ch-type"></canvas></div></div>
   </div>
   <div class="cbf">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -279,7 +312,7 @@ body.contractor-mode #main{margin-left:0}
         <button class="btn-period" data-p="1m"  onclick="setChartPeriod('1m',this)">1M</button>
       </div>
     </div>
-    <canvas id="ch-growth" height="130"></canvas>
+    <div class="chart-box chart-box-wide"><canvas id="ch-growth"></canvas></div>
     <div style="margin-top:8px;font-size:10px;color:var(--muted);display:flex;gap:16px">
       <span>🟢 Total Wealth</span>
       <span>🔵 Capital Deposited (cost basis)</span>
@@ -1220,13 +1253,33 @@ function renderDash(){
   const og=w.eur-w.invEUR;
   const ogPct=w.invEUR>0?(og/w.invEUR)*100:0;
 
-  document.getElementById('d-cards').innerHTML=`
-    <div class="card"><div class="cl">Total Wealth</div><div class="cv">${fm(w.eur)}</div><div class="cs">${fm(w.usd,'USD')} USD</div></div>
-    <div class="card"><div class="cl">Total Invested</div><div class="cv">${fm(w.invEUR)}</div><div class="cs">Cost basis</div></div>
-    <div class="card"><div class="cl">Organic Growth</div><div class="cv ${pc(og)}">${fm(og)}</div><div class="cc ${pc(og)}">${fp(ogPct)}</div></div>
-    <div class="card"><div class="cl">vs Last Snapshot</div><div class="cv ${pc(delta)}">${delta!=null?fm(delta):'—'}</div><div class="cs">${lastSnap?'Since '+lastSnap.date:'No snapshots yet'}</div></div>
-    <div class="card"><div class="cl">RE Monthly Cash Flow</div><div class="cv ${pc(re.netCF)}">${re.netCF?fm(re.netCF):'—'}</div><div class="cs">Rent − mortgage − opex − maint</div></div>
-    <div class="card"><div class="cl">Crypto Total</div><div class="cv">${fm(w.parts.k.eur+w.parts.ex.eur+w.parts.wb.eur)}</div><div class="cs">${fp((w.parts.k.eur+w.parts.ex.eur+w.parts.wb.eur)/w.eur*100)} of portfolio</div></div>`;
+  const deltaPct=(lastSnap&&lastSnap.totalEUR)?(delta/lastSnap.totalEUR)*100:null;
+  const cryptoEUR=w.parts.k.eur+w.parts.ex.eur+w.parts.wb.eur;
+
+  // ── Hero summary ──────────────────────────────────────────
+  document.getElementById('d-hero').innerHTML=`
+    <div class="hero-main">
+      <div class="hero-lab">Total Wealth</div>
+      <div class="hero-val">${fm(w.eur)}</div>
+      <div class="hero-sub">${fm(w.usd,'USD')} USD</div>
+      <div class="hero-chg ${pc(delta)}">
+        ${delta!=null?`${delta>=0?'▲':'▼'} ${fm(Math.abs(delta))}${deltaPct!=null?` (${fp(Math.abs(deltaPct))})`:''}`:'—'}
+        <span style="color:var(--muted);font-weight:400">${lastSnap?'since '+lastSnap.date:'no snapshots yet'}</span>
+      </div>
+    </div>
+    <div class="hero-grid">
+      <div class="hstat"><div class="hl">Invested</div><div class="hv">${fm(w.invEUR)}</div><div class="hs">cost basis</div></div>
+      <div class="hstat"><div class="hl">Organic Growth</div><div class="hv ${pc(og)}">${fm(og)}</div><div class="hs ${pc(og)}">${fp(ogPct)}</div></div>
+      <div class="hstat"><div class="hl">Property Equity</div><div class="hv">${fm(re.eur)}</div><div class="hs">${fp(re.eur/w.eur*100)} of total</div></div>
+      <div class="hstat"><div class="hl">Crypto</div><div class="hv">${fm(cryptoEUR)}</div><div class="hs">${fp(cryptoEUR/w.eur*100)} of total</div></div>
+      <div class="hstat"><div class="hl">RE Cash Flow</div><div class="hv ${pc(re.netCF)}">${re.netCF?fm(re.netCF):'—'}</div><div class="hs">per month, net</div></div>
+      <div class="hstat"><div class="hl">Snapshots</div><div class="hv">${(S.snapshots||[]).length}</div><div class="hs">${lastSnap?'latest '+lastSnap.date:'none yet'}</div></div>
+    </div>`;
+
+  // ── Allocation bar (asset type) ───────────────────────────
+  renderAllocBar(w);
+
+  document.getElementById('d-cards').innerHTML='';
 
   // Breakdown table
   const rows=[
@@ -1288,15 +1341,48 @@ function renderAllocCharts(w){
   ].filter(d=>d.v>0));
 }
 
+// Horizontal allocation bar + legend — readable at any width, unlike a donut.
+function renderAllocBar(w){
+  const el=document.getElementById('d-allocbar'); if(!el) return;
+  const B=classBreakdown();
+  const rows=ASSET_CLASSES.map(c=>({c,label:CLASS_META[c].label,icon:CLASS_META[c].icon,
+      color:CLASS_META[c].color,eur:B[c].eur,cost:B[c].cost}))
+    .filter(r=>r.eur>0.5).sort((a,b)=>b.eur-a.eur);
+  const tot=rows.reduce((a,b)=>a+b.eur,0)||1;
+
+  el.innerHTML=`
+    <div class="allocbar">
+      ${rows.map(r=>`<span style="width:${(r.eur/tot*100).toFixed(2)}%;background:${r.color}"
+        title="${r.label}: ${fm(r.eur)} (${(r.eur/tot*100).toFixed(1)}%)"></span>`).join('')}
+    </div>
+    <div class="alloclegend">
+      ${rows.map(r=>{
+        const pl=r.cost>0?r.eur-r.cost:null;
+        return `<div class="alli" title="${r.label}${pl!=null?' · P&L '+fm(pl):''}">
+          <span class="dot" style="background:${r.color}"></span>
+          <span class="nm">${r.icon} ${r.label}</span>
+          <span class="vl">${fm(r.eur,'EUR',0)}</span>
+          <span class="pc">${(r.eur/tot*100).toFixed(1)}%</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
 function mkDonut(id,data){
   if(CH[id])CH[id].destroy();
   CH[id]=new Chart(document.getElementById(id).getContext('2d'),{
     type:'doughnut',
     data:{labels:data.map(d=>d.l),datasets:[{data:data.map(d=>d.v),backgroundColor:data.map(d=>d.c),borderWidth:1,borderColor:'#161b22'}]},
-    options:{plugins:{
-      legend:{position:'right',labels:{color:'#e6edf3',font:{size:10},boxWidth:10,padding:8}},
-      tooltip:{callbacks:{label:c=>` ${fm(c.parsed)} (${((c.parsed/c.dataset.data.reduce((a,b)=>a+b,0))*100).toFixed(1)}%)`}}
-    }}
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,          // container height governs, not width
+      cutout:'62%',
+      layout:{padding:4},
+      plugins:{
+        legend:{position:window.innerWidth<620?'bottom':'right',
+          labels:{color:'#e6edf3',font:{size:10},boxWidth:10,padding:7}},
+        tooltip:{callbacks:{label:c=>` ${fm(c.parsed)} (${((c.parsed/c.dataset.data.reduce((a,b)=>a+b,0))*100).toFixed(1)}%)`}}
+      }}
   });
 }
 
@@ -1339,6 +1425,8 @@ function renderGrowthChart(){
   CH.growth=new Chart(ctx,{type:'line',
     data:{labels:snaps.map(s=>s.date),datasets},
     options:{
+      responsive:true,
+      maintainAspectRatio:false,
       plugins:{legend:{labels:{color:'#e6edf3',font:{size:11}}},tooltip:{callbacks:{label:c=>` ${fm(c.parsed.y)}`}}},
       scales:{x:{ticks:{color:'#7d8590'},grid:{color:'#21262d'}},y:{ticks:{color:'#7d8590',callback:v=>fm(v,'EUR',0)},grid:{color:'#21262d'}}}
     }
@@ -3484,6 +3572,18 @@ async function setContractorCreds(){
 // INIT
 // ═══════════════════════════════════════════════════════════
 loadState();
+
+// Re-lay-out the dashboard when the window is resized (donut legend moves to
+// the bottom on narrow screens, so the charts must be rebuilt, not just scaled)
+let __rsT=null;
+window.addEventListener('resize',()=>{
+  clearTimeout(__rsT);
+  __rsT=setTimeout(()=>{
+    if(document.getElementById('page-dashboard')?.classList.contains('active')){
+      try{ renderDash(); }catch(e){}
+    }
+  },220);
+});
 // NOTE: the old "auto-save on load" that fired here was removed in v3.2.
 // It pushed this tab's in-memory copy to the server 1.5s after every load
 // without checking whether the server held something newer, so a stale tab
